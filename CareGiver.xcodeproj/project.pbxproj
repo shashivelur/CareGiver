@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -23,7 +23,6 @@
 		A1B2C3D4E622 /* NotificationsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E623 /* NotificationsViewController.swift */; };
 		A1B2C3D4E624 /* ReportsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E625 /* ReportsViewController.swift */; };
 		A1B2C3D4E626 /* HelpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E627 /* HelpViewController.swift */; };
-		A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E681 /* FinancialAssistanceViewController.swift */; };
 		A1B2C3D4E628 /* CareGiver.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E629 /* CareGiver.xcdatamodeld */; };
 		A1B2C3D4E631 /* CoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E632 /* CoreDataManager.swift */; };
 		A1B2C3D4E633 /* Caregiver+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E634 /* Caregiver+CoreDataClass.swift */; };
@@ -33,10 +32,10 @@
 		A1B2C3D4E641 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E642 /* Main.storyboard */; };
 		A1B2C3D4E644 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E645 /* Assets.xcassets */; };
 		A1B2C3D4E646 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E647 /* LaunchScreen.storyboard */; };
+		A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E681 /* FinancialAssistanceViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1B2C3D4E650 /* CareGiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CareGiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E601 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
@@ -53,7 +52,6 @@
 		A1B2C3D4E623 /* NotificationsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E625 /* ReportsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E627 /* HelpViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpViewController.swift; sourceTree = "<group>"; };
-		A1B2C3D4E681 /* FinancialAssistanceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialAssistanceViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E630 /* CareGiver.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = CareGiver.xcdatamodel; sourceTree = "<group>"; };
 		A1B2C3D4E632 /* CoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataManager.swift; sourceTree = "<group>"; };
 		A1B2C3D4E634 /* Caregiver+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Caregiver+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -64,6 +62,8 @@
 		A1B2C3D4E645 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E648 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A1B2C3D4E649 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E650 /* CareGiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CareGiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E681 /* FinancialAssistanceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialAssistanceViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,14 +85,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		A1B2C3D4E654 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A1B2C3D4E650 /* CareGiver.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		A1B2C3D4E653 /* CareGiver */ = {
 			isa = PBXGroup;
 			children = (
@@ -104,6 +96,14 @@
 				A1B2C3D4E649 /* Info.plist */,
 			);
 			path = CareGiver;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E654 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E650 /* CareGiver.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		A1B2C3D4E655 /* ViewControllers */ = {
@@ -448,20 +448,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1B2C3D4E663 /* Build configuration list for PBXProject "CareGiver" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A1B2C3D4E664 /* Debug */,
-				A1B2C3D4E665 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		A1B2C3D4E659 /* Build configuration list for PBXNativeTarget "CareGiver" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1B2C3D4E666 /* Debug */,
 				A1B2C3D4E667 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3D4E663 /* Build configuration list for PBXProject "CareGiver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E664 /* Debug */,
+				A1B2C3D4E665 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
