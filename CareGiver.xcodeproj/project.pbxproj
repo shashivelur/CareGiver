@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275AD2E526E4F003408F7 /* TrustedPeopleViewController.swift */; };
+		5CC275B02E526E5C003408F7 /* TaskListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275AF2E526E5C003408F7 /* TaskListCell.swift */; };
+		5CC275B22E526E6F003408F7 /* DayTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B12E526E6F003408F7 /* DayTimelineView.swift */; };
+		5CC275B42E526E7A003408F7 /* HourTaskCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B32E526E7A003408F7 /* HourTaskCell.swift */; };
+		5CC275B82E526E95003408F7 /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B72E526E95003408F7 /* MonthCalendarView.swift */; };
+		5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B52E526E95003408F7 /* CheckBoxButton.swift */; };
+		5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B62E526E95003408F7 /* YearMonthCell.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
 		A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F9 /* SceneDelegate.swift */; };
 		A1B2C3D4E600 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E601 /* LoginViewController.swift */; };
@@ -36,6 +43,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5CC275AD2E526E4F003408F7 /* TrustedPeopleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrustedPeopleViewController.swift; sourceTree = "<group>"; };
+		5CC275AF2E526E5C003408F7 /* TaskListCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListCell.swift; sourceTree = "<group>"; };
+		5CC275B12E526E6F003408F7 /* DayTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimelineView.swift; sourceTree = "<group>"; };
+		5CC275B32E526E7A003408F7 /* HourTaskCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourTaskCell.swift; sourceTree = "<group>"; };
+		5CC275B52E526E95003408F7 /* CheckBoxButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckBoxButton.swift; sourceTree = "<group>"; };
+		5CC275B62E526E95003408F7 /* YearMonthCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearMonthCell.swift; sourceTree = "<group>"; };
+		5CC275B72E526E95003408F7 /* MonthCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E601 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
@@ -114,6 +128,13 @@
 				A1B2C3D4E605 /* MainTabBarController.swift */,
 				A1B2C3D4E607 /* HomeViewController.swift */,
 				A1B2C3D4E609 /* CalendarViewController.swift */,
+				5CC275AD2E526E4F003408F7 /* TrustedPeopleViewController.swift */,
+				5CC275AF2E526E5C003408F7 /* TaskListCell.swift */,
+				5CC275B12E526E6F003408F7 /* DayTimelineView.swift */,
+				5CC275B52E526E95003408F7 /* CheckBoxButton.swift */,
+				5CC275B62E526E95003408F7 /* YearMonthCell.swift */,
+				5CC275B72E526E95003408F7 /* MonthCalendarView.swift */,
+				5CC275B32E526E7A003408F7 /* HourTaskCell.swift */,
 				A1B2C3D4E611 /* ChatbotViewController.swift */,
 				A1B2C3D4E613 /* TrackingViewController.swift */,
 				A1B2C3D4E615 /* SocialGroupsViewController.swift */,
@@ -222,7 +243,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CC275B82E526E95003408F7 /* MonthCalendarView.swift in Sources */,
+				5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */,
+				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
+				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
 				A1B2C3D4E602 /* RegisterViewController.swift in Sources */,
 				A1B2C3D4E604 /* MainTabBarController.swift in Sources */,
 				A1B2C3D4E606 /* HomeViewController.swift in Sources */,
@@ -232,12 +257,15 @@
 				A1B2C3D4E614 /* SocialGroupsViewController.swift in Sources */,
 				A1B2C3D4E616 /* MenuViewController.swift in Sources */,
 				A1B2C3D4E618 /* ProfileViewController.swift in Sources */,
+				5CC275B02E526E5C003408F7 /* TaskListCell.swift in Sources */,
 				A1B2C3D4E620 /* SettingsViewController.swift in Sources */,
 				A1B2C3D4E622 /* NotificationsViewController.swift in Sources */,
 				A1B2C3D4E624 /* ReportsViewController.swift in Sources */,
 				A1B2C3D4E626 /* HelpViewController.swift in Sources */,
+				5CC275B42E526E7A003408F7 /* HourTaskCell.swift in Sources */,
 				A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */,
 				A1B2C3D4E628 /* CareGiver.xcdatamodeld in Sources */,
+				5CC275B22E526E6F003408F7 /* DayTimelineView.swift in Sources */,
 				A1B2C3D4E631 /* CoreDataManager.swift in Sources */,
 				A1B2C3D4E633 /* Caregiver+CoreDataClass.swift in Sources */,
 				A1B2C3D4E635 /* Caregiver+CoreDataProperties.swift in Sources */,
