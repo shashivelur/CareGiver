@@ -18,6 +18,7 @@
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
 		A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F9 /* SceneDelegate.swift */; };
 		A1B2C3D4E600 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E601 /* LoginViewController.swift */; };
+		A1B2C3D4E602 /* RegisterStep2ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E603 /* RegisterStep2ViewController.swift */; };
 		A1B2C3D4E604 /* MainTabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E605 /* MainTabBarController.swift */; };
 		A1B2C3D4E606 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E607 /* HomeViewController.swift */; };
 		A1B2C3D4E608 /* CalendarViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E609 /* CalendarViewController.swift */; };
@@ -55,6 +56,7 @@
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E601 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
+		A1B2C3D4E603 /* RegisterStep2ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep2ViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E605 /* MainTabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabBarController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E607 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E609 /* CalendarViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViewController.swift; sourceTree = "<group>"; };
@@ -128,6 +130,7 @@
 				E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */,
 				6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */,
 				A1B2C3D4E601 /* LoginViewController.swift */,
+				A1B2C3D4E603 /* RegisterStep2ViewController.swift */,
 				A1B2C3D4E605 /* MainTabBarController.swift */,
 				A1B2C3D4E607 /* HomeViewController.swift */,
 				A1B2C3D4E609 /* CalendarViewController.swift */,
@@ -256,6 +259,8 @@
 				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
+				A1B2C3D4E602 /* RegisterViewController.swift in Sources */,
+				A1B2C3D4E602 /* RegisterStep2ViewController.swift in Sources */,
 				A1B2C3D4E604 /* MainTabBarController.swift in Sources */,
 				A1B2C3D4E606 /* HomeViewController.swift in Sources */,
 				A1B2C3D4E608 /* CalendarViewController.swift in Sources */,
