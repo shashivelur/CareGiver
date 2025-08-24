@@ -1,4 +1,5 @@
 import UIKit
+import ContactsUI
 
 // MARK: - Model
 struct TrustedPerson: Codable, Equatable {
@@ -48,12 +49,8 @@ final class TrustedPersonCell: UITableViewCell {
 // MARK: - View Controller
 final class TrustedPeopleViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
-    // Simple persistence (UserDefaults)
     private let storageKey = "trusted_people_storage_v1"
-
-    private var trustedPeople: [TrustedPerson] = [] {
-        didSet { savePeople() }
-    }
+    private var trustedPeople: [TrustedPerson] = [] { didSet { savePeople() } }
 
     private let titleLabel: UILabel = {
         let l = UILabel()
@@ -85,6 +82,18 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
         return b
     }()
 
+    private let addFromContactsButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setTitle("Add From Contacts", for: .normal)
+        b.setTitleColor(.white, for: .normal)
+        b.backgroundColor = .systemGreen
+        b.titleLabel?.font = .boldSystemFont(ofSize: 17)
+        b.layer.cornerRadius = 10
+        b.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        b.translatesAutoresizingMaskIntoConstraints = false
+        return b
+    }()
+
     private let sectionLabel: UILabel = {
         let l = UILabel()
         l.text = "Trusted People"
@@ -104,16 +113,12 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-
-        // Load saved people
         trustedPeople = loadPeople()
 
-        // Top bar
         view.addSubview(titleLabel)
         view.addSubview(closeButton)
 
-        // Stack
-        let stack = UIStackView(arrangedSubviews: [addButton, sectionLabel, tableView])
+        let stack = UIStackView(arrangedSubviews: [addButton, addFromContactsButton, sectionLabel, tableView])
         stack.axis = .vertical
         stack.spacing = 12
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -132,20 +137,17 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
             stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
         ])
 
-        // Table setup
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(TrustedPersonCell.self, forCellReuseIdentifier: "TrustedPersonCell")
 
-        // Actions
         addButton.addTarget(self, action: #selector(addPersonTapped), for: .touchUpInside)
+        addFromContactsButton.addTarget(self, action: #selector(addFromContactsTapped), for: .touchUpInside)
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
     }
 
     // MARK: Actions
-    @objc private func closeTapped() {
-        dismiss(animated: true)
-    }
+    @objc private func closeTapped() { dismiss(animated: true) }
 
     @objc private func addPersonTapped() {
         presentAddOrEditAlert(title: "Add Trusted Person", existing: nil) { [weak self] newPerson in
@@ -153,6 +155,12 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
             self.trustedPeople.append(newPerson)
             self.tableView.reloadData()
         }
+    }
+
+    @objc private func addFromContactsTapped() {
+        let picker = CNContactPickerViewController()
+        picker.delegate = self
+        present(picker, animated: true)
     }
 
     private func editPerson(at index: Int) {
@@ -181,15 +189,10 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
         cell.onOptionsTapped = { [weak self, weak cell] in
             guard let self = self, let cell = cell else { return }
             let menu = UIAlertController(title: person.name, message: nil, preferredStyle: .actionSheet)
-            menu.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in
-                self.editPerson(at: indexPath.row)
-            }))
-            menu.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
-                self.deletePerson(at: indexPath.row)
-            }))
+            menu.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in self.editPerson(at: indexPath.row) }))
+            menu.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in self.deletePerson(at: indexPath.row) }))
             menu.addAction(UIAlertAction(title: "Cancel", style: .cancel))
 
-            // iPad popover anchor
             if let pop = menu.popoverPresentationController {
                 pop.sourceView = cell.optionsButton
                 pop.sourceRect = cell.optionsButton.bounds
@@ -199,30 +202,14 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
         return cell
     }
 
-    // MARK: Small popup (like your Add Task) using UIAlertController
-    private func presentAddOrEditAlert(title: String,
-                                       existing: TrustedPerson?,
-                                       onSave: @escaping (TrustedPerson) -> Void) {
+    // MARK: Small popup
+    private func presentAddOrEditAlert(title: String, existing: TrustedPerson?, onSave: @escaping (TrustedPerson) -> Void) {
         let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
-
-        alert.addTextField { tf in
-            tf.placeholder = "Full Name"
-            tf.text = existing?.name
-        }
-        alert.addTextField { tf in
-            tf.placeholder = "Phone Number"
-            tf.keyboardType = .phonePad
-            tf.text = existing?.phone
-        }
-        alert.addTextField { tf in
-            tf.placeholder = "Email Address"
-            tf.keyboardType = .emailAddress
-            tf.autocapitalizationType = .none
-            tf.text = existing?.email
-        }
+        alert.addTextField { $0.placeholder = "Full Name"; $0.text = existing?.name }
+        alert.addTextField { $0.placeholder = "Phone Number"; $0.keyboardType = .phonePad; $0.text = existing?.phone }
+        alert.addTextField { $0.placeholder = "Email Address"; $0.keyboardType = .emailAddress; $0.autocapitalizationType = .none; $0.text = existing?.email }
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
         alert.addAction(UIAlertAction(title: "Save", style: .default, handler: { _ in
             let name  = alert.textFields?[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let phone = alert.textFields?[1].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -230,27 +217,33 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
             guard !name.isEmpty, !phone.isEmpty, !email.isEmpty else { return }
             onSave(TrustedPerson(name: name, phone: phone, email: email))
         }))
-
         present(alert, animated: true)
     }
 
-    // MARK: Persistence
+    // MARK: Storage
     private func savePeople() {
-        do {
-            let data = try JSONEncoder().encode(trustedPeople)
+        if let data = try? JSONEncoder().encode(trustedPeople) {
             UserDefaults.standard.set(data, forKey: storageKey)
-        } catch {
-            print("Failed to save trusted people: \(error)")
         }
     }
 
     private func loadPeople() -> [TrustedPerson] {
-        guard let data = UserDefaults.standard.data(forKey: storageKey) else { return [] }
-        do {
-            return try JSONDecoder().decode([TrustedPerson].self, from: data)
-        } catch {
-            print("Failed to load trusted people: \(error)")
-            return []
+        if let data = UserDefaults.standard.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode([TrustedPerson].self, from: data) {
+            return decoded
         }
+        return []
+    }
+}
+
+// MARK: - Contacts
+extension TrustedPeopleViewController: CNContactPickerDelegate {
+    func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
+        let name = CNContactFormatter.string(from: contact, style: .fullName) ?? ""
+        let phone = contact.phoneNumbers.first?.value.stringValue ?? ""
+        let email = contact.emailAddresses.first?.value as String? ?? ""
+        let newPerson = TrustedPerson(name: name, phone: phone, email: email)
+        trustedPeople.append(newPerson)
+        tableView.reloadData()
     }
 }
