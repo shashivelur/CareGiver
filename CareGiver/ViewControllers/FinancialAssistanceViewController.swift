@@ -1,6 +1,8 @@
 import UIKit
 import CoreData
 
+// If you get a 'Cannot find GovernmentAidInfoViewController' error, ensure GovernmentAidInfoViewController.swift is in your target's Compile Sources in Xcode.
+
 class FinancialAssistanceViewController: UIViewController {
     
     var currentCaregiver: Caregiver?
@@ -195,7 +197,7 @@ class FinancialAssistanceViewController: UIViewController {
     
     @objc private func cardTapped(_ gesture: UITapGestureRecognizer) {
         guard let cardView = gesture.view else { return }
-        
+
         // Add visual feedback
         UIView.animate(withDuration: 0.1, animations: {
             cardView.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
@@ -204,8 +206,16 @@ class FinancialAssistanceViewController: UIViewController {
                 cardView.transform = CGAffineTransform.identity
             }
         }
-        
-        // Show alert with more information (placeholder for now)
+
+        // Identify which card was tapped by checking the title label
+        if let titleLabel = cardView.subviews.compactMap({ $0 as? UILabel }).first,
+           titleLabel.text == "Government Programs" {
+            let vc = GovernmentAidInfoViewController()
+            navigationController?.pushViewController(vc, animated: true)
+            return
+        }
+
+        // Default: show alert for other cards
         let alert = UIAlertController(title: "Coming Soon", message: "Detailed financial assistance information will be available in a future update.", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
