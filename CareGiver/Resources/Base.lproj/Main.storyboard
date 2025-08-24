@@ -164,6 +164,15 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="QFd-Hr-80o">
+                                <rect key="frame" x="163" y="472" width="75" height="35"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Button"/>
+                                <buttonConfiguration key="configuration" style="plain" title="Button"/>
+                                <connections>
+                                    <segue destination="y7h-7P-jgF" kind="show" id="CbI-t1-WdT"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="u6O-EL-mPG"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -178,6 +187,7 @@
         <scene sceneID="I5c-OC-lDH">
             <objects>
                 <tabBarController storyboardIdentifier="MainTabBarController" id="y7h-7P-jgF" customClass="MainTabBarController" customModule="CareGiver" customModuleProvider="target" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="QYU-0a-EUf"/>
                     <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="7aG-yX-5kW">
                         <rect key="frame" x="0.0" y="0.0" width="1000" height="1000"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -277,7 +287,7 @@
                     <tabBarItem key="tabBarItem" title="Home" image="house" catalog="system" id="2Ka-Hj-5RQ"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="4f7-yz-M6X">
-                        <rect key="frame" x="0.0" y="118" width="393" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                 </navigationController>
@@ -292,7 +302,7 @@
                     <tabBarItem key="tabBarItem" title="Calendar" image="calendar" catalog="system" id="0ky-xr-pJK"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="b1n-jg-9Qf">
-                        <rect key="frame" x="0.0" y="118" width="393" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                 </navigationController>
@@ -307,7 +317,7 @@
                     <tabBarItem key="tabBarItem" title="Chatbot" image="message" catalog="system" id="3YO-pY-bYc"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="Ebi-K3-Pf9">
-                        <rect key="frame" x="0.0" y="118" width="393" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                 </navigationController>
@@ -322,7 +332,7 @@
                     <tabBarItem key="tabBarItem" title="Tracking" image="chart.line.uptrend.xyaxis" catalog="system" id="O4H-Ep-pxB"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="YJk-iZ-TrC">
-                        <rect key="frame" x="0.0" y="118" width="393" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                 </navigationController>
@@ -337,7 +347,7 @@
                     <tabBarItem key="tabBarItem" title="Social" image="person.3" catalog="system" id="f4A-Z0-9HX"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="xDR-kf-jPo">
-                        <rect key="frame" x="0.0" y="118" width="393" height="44"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="56"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                 </navigationController>
