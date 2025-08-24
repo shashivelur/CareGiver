@@ -15,6 +15,7 @@ extension Caregiver {
     @NSManaged public var dateOfBirth: Date?
     @NSManaged public var createdAt: Date?
     @NSManaged public var patients: NSSet?
+    @NSManaged public var password: String?
 
 }
 
