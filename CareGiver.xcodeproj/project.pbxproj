@@ -40,6 +40,7 @@
 		A1B2C3D4E644 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E645 /* Assets.xcassets */; };
 		A1B2C3D4E646 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E647 /* LaunchScreen.storyboard */; };
 		A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E681 /* FinancialAssistanceViewController.swift */; };
+		E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -78,6 +79,7 @@
 		A1B2C3D4E649 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E650 /* CareGiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CareGiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D4E681 /* FinancialAssistanceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialAssistanceViewController.swift; sourceTree = "<group>"; };
+		E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GovernmentAidInfoViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +125,7 @@
 		A1B2C3D4E655 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */,
 				A1B2C3D4E601 /* LoginViewController.swift */,
 				A1B2C3D4E603 /* RegisterViewController.swift */,
 				A1B2C3D4E605 /* MainTabBarController.swift */,
@@ -199,6 +202,10 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					New,
+					"New-1",
+				);
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
@@ -243,6 +250,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */,
 				5CC275B82E526E95003408F7 /* MonthCalendarView.swift in Sources */,
 				5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */,
 				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
