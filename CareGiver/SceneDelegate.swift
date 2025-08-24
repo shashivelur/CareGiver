@@ -2,22 +2,27 @@ import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
-    var window: UIWindow?
+    var window: UIWindow?   // <- needed so the window stays alive
 
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = (scene as? UIWindowScene) else { return }
-        
-        // Create window programmatically
-        window = UIWindow(windowScene: windowScene)
-        
-        // Create login view controller as root
-        let loginViewController = LoginViewController()
-        let navigationController = UINavigationController(rootViewController: loginViewController)
-        
-        // Set the root view controller
-        window?.rootViewController = navigationController
-        window?.makeKeyAndVisible()
-    }
+        func scene(_ scene: UIScene,
+                   willConnectTo session: UISceneSession,
+                   options connectionOptions: UIScene.ConnectionOptions) {
+            
+            guard let windowScene = scene as? UIWindowScene else { return }
+            
+            let window = UIWindow(windowScene: windowScene)
+            
+            // Load your storyboard's initial VC (make sure the scene is marked "Is Initial View Controller")
+            let root = UIStoryboard(name: "Main", bundle: nil).instantiateInitialViewController()!
+            
+            // Or, if you want a specific VC by Storyboard ID:
+            // let root = UIStoryboard(name: "Main", bundle: nil)
+            //     .instantiateViewController(withIdentifier: "LoginViewController")
+            
+            window.rootViewController = root
+            self.window = window
+            window.makeKeyAndVisible()
+        }
 
     func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.
