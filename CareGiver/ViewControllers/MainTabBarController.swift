@@ -49,7 +49,7 @@ class MainTabBarController: UITabBarController {
         calendarVC.currentCaregiver = currentCaregiver
         chatbotVC.currentCaregiver = currentCaregiver
         trackingVC.currentCaregiver = currentCaregiver
-        socialGroupsVC.currentCaregiver = currentCaregiver
+        
     }
     
     private func setupHamburgerMenu() {
