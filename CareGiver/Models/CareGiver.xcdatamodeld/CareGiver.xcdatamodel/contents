@@ -9,7 +9,7 @@
         <attribute name="password" optional="YES" attributeType="String"/>
         <attribute name="phoneNumber" optional="YES" attributeType="String"/>
         <attribute name="username" optional="YES" attributeType="String"/>
-        <relationship name="patients" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Patient" inverseName="caregiver" inverseEntity="Patient"/>
+        <relationship name="patients" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Patient"/>
     </entity>
     <entity name="Patient" representedClassName="Patient" syncable="YES">
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -19,6 +19,6 @@
         <attribute name="lastName" optional="YES" attributeType="String"/>
         <attribute name="phoneNumber" optional="YES" attributeType="String"/>
         <attribute name="veteranStatus" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <relationship name="caregiver" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Caregiver" inverseName="patients" inverseEntity="Caregiver"/>
+        <relationship name="caregiver" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Caregiver"/>
     </entity>
 </model>
