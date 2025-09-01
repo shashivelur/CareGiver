@@ -76,6 +76,7 @@
                     <connections>
                         <outlet property="passwordTextField" destination="AOa-6l-2yE" id="3oE-c7-7Gt"/>
                         <outlet property="usernameTextField" destination="MD1-Ih-EmH" id="K3Z-eA-sng"/>
+                        <segue destination="y7h-7P-jgF" kind="showDetail" identifier="toHomePageFromLogin" id="Q8P-Es-NkQ"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -85,13 +86,13 @@
         <!--Register Step1 View Controller-->
         <scene sceneID="7Y6-pp-uiL">
             <objects>
-                <viewController id="oav-vM-HZB" customClass="RegisterStep1ViewController" customModule="CareGiver" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController modalPresentationStyle="fullScreen" id="oav-vM-HZB" customClass="RegisterStep1ViewController" customModule="CareGiver" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="YUK-C8-lTm">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eBr-ez-2Cg">
-                                <rect key="frame" x="115" y="443" width="162" height="65"/>
+                                <rect key="frame" x="115" y="678" width="162" height="65"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" systemColor="systemGreenColor"/>
                                 <color key="tintColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -104,89 +105,79 @@
                                 </connections>
                             </button>
                             <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Username" textAlignment="natural" minimumFontSize="19" translatesAutoresizingMaskIntoConstraints="NO" id="jlF-Yz-wGV">
-                                <rect key="frame" x="61" y="200" width="271" height="43"/>
+                                <rect key="frame" x="61" y="137" width="271" height="43"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="29"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
                             <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Password" textAlignment="natural" minimumFontSize="19" translatesAutoresizingMaskIntoConstraints="NO" id="XAx-9a-OlO">
-                                <rect key="frame" x="61" y="267" width="271" height="43"/>
+                                <rect key="frame" x="61" y="204" width="271" height="43"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="29"/>
-                                <textInputTraits key="textInputTraits"/>
+                                <textInputTraits key="textInputTraits" secureTextEntry="YES"/>
                             </textField>
-                        </subviews>
-                        <viewLayoutGuide key="safeArea" id="Nk7-fv-ud8"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                    </view>
-                    <connections>
-                        <outlet property="nextButton" destination="eBr-ez-2Cg" id="hPm-OX-nVp"/>
-                        <outlet property="passwordTextField" destination="XAx-9a-OlO" id="EPA-S2-bic"/>
-                        <outlet property="usernameTextField" destination="jlF-Yz-wGV" id="MhF-rd-cym"/>
-                        <segue destination="XNH-ZC-lCa" kind="presentation" identifier="toRegisterStep2" modalPresentationStyle="fullScreen" id="WWI-CO-Aya"/>
-                    </connections>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="wqz-EY-rZ8" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="373" y="-35"/>
-        </scene>
-        <!--Register Step2 View Controller-->
-        <scene sceneID="ZjL-bR-l9q">
-            <objects>
-                <viewController storyboardIdentifier="RegisterViewController" id="XNH-ZC-lCa" customClass="RegisterStep2ViewController" customModule="CareGiver" customModuleProvider="target" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="yCq-U8-KfY">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
                             <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="First Name" textAlignment="natural" minimumFontSize="19" translatesAutoresizingMaskIntoConstraints="NO" id="hl4-ce-uEB">
-                                <rect key="frame" x="61" y="198" width="271" height="43"/>
+                                <rect key="frame" x="61" y="272" width="271" height="43"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="29"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
                             <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Last Name" textAlignment="natural" minimumFontSize="19" translatesAutoresizingMaskIntoConstraints="NO" id="GFt-5i-N3l">
-                                <rect key="frame" x="61" y="265" width="271" height="43"/>
+                                <rect key="frame" x="61" y="342" width="271" height="43"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="29"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
-                            <datePicker contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" datePickerMode="date" translatesAutoresizingMaskIntoConstraints="NO" id="ZDq-8P-z5w">
-                                <rect key="frame" x="0.0" y="329" width="393" height="135"/>
-                                <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
-                                <date key="maximumDate" timeIntervalSinceReferenceDate="210229200">
-                                    <!--2007-08-31 05:00:00 +0000-->
-                                </date>
-                            </datePicker>
+                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Email" textAlignment="natural" minimumFontSize="19" translatesAutoresizingMaskIntoConstraints="NO" id="Ecl-Pb-4IS">
+                                <rect key="frame" x="61" y="405" width="271" height="43"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="29"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
+                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Phone Number" textAlignment="natural" minimumFontSize="19" translatesAutoresizingMaskIntoConstraints="NO" id="d9t-gn-1NG">
+                                <rect key="frame" x="61" y="466" width="271" height="43"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="29"/>
+                                <textInputTraits key="textInputTraits" keyboardType="phonePad"/>
+                            </textField>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Birthday" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ILv-2C-Clh">
-                                <rect key="frame" x="154" y="329" width="84" height="28"/>
+                                <rect key="frame" x="63" y="532" width="84" height="28"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="23"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="QFd-Hr-80o">
-                                <rect key="frame" x="163" y="472" width="75" height="35"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" title="Button"/>
-                                <connections>
-                                    <segue destination="y7h-7P-jgF" kind="show" id="CbI-t1-WdT"/>
-                                </connections>
-                            </button>
+                            <datePicker contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" datePickerMode="date" translatesAutoresizingMaskIntoConstraints="NO" id="ZDq-8P-z5w">
+                                <rect key="frame" x="203" y="522" width="129" height="38"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                                <date key="maximumDate" timeIntervalSinceReferenceDate="210229200">
+                                    <!--2007-08-31 05:00:00 +0000-->
+                                </date>
+                            </datePicker>
                         </subviews>
-                        <viewLayoutGuide key="safeArea" id="u6O-EL-mPG"/>
+                        <viewLayoutGuide key="safeArea" id="Nk7-fv-ud8"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
-                    <navigationItem key="navigationItem" id="Y8V-lB-zCT"/>
+                    <connections>
+                        <outlet property="birthdayDatePicker" destination="ZDq-8P-z5w" id="WNs-xF-R0R"/>
+                        <outlet property="emailTextField" destination="Ecl-Pb-4IS" id="uiG-ah-k8N"/>
+                        <outlet property="firstNameTextField" destination="hl4-ce-uEB" id="OjT-P9-gYm"/>
+                        <outlet property="lastNameTextField" destination="GFt-5i-N3l" id="BRc-gN-jJa"/>
+                        <outlet property="nextButton" destination="eBr-ez-2Cg" id="hPm-OX-nVp"/>
+                        <outlet property="passwordTextField" destination="XAx-9a-OlO" id="EPA-S2-bic"/>
+                        <outlet property="phoneNumberTextField" destination="d9t-gn-1NG" id="jU5-O1-QbI"/>
+                        <outlet property="usernameTextField" destination="jlF-Yz-wGV" id="MhF-rd-cym"/>
+                        <segue destination="y7h-7P-jgF" kind="showDetail" identifier="toMainPage" id="t25-Cz-hc6"/>
+                    </connections>
                 </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="KF4-Xj-JhE" sceneMemberID="firstResponder"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="wqz-EY-rZ8" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1075.5725190839694" y="-34.507042253521128"/>
+            <point key="canvasLocation" x="370.2290076335878" y="-35.211267605633807"/>
         </scene>
         <!--Main Tab Bar Controller-->
         <scene sceneID="I5c-OC-lDH">
             <objects>
-                <tabBarController storyboardIdentifier="MainTabBarController" id="y7h-7P-jgF" customClass="MainTabBarController" customModule="CareGiver" customModuleProvider="target" sceneMemberID="viewController">
+                <tabBarController storyboardIdentifier="MainTabBarController" modalPresentationStyle="fullScreen" id="y7h-7P-jgF" customClass="MainTabBarController" customModule="CareGiver" customModuleProvider="target" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="QYU-0a-EUf"/>
                     <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="7aG-yX-5kW">
                         <rect key="frame" x="0.0" y="0.0" width="1000" height="1000"/>
@@ -298,7 +289,7 @@
         <!--Calendar-->
         <scene sceneID="8VE-D9-wuT">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="dJa-rF-JxL" sceneMemberID="viewController">
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" modalPresentationStyle="fullScreen" id="dJa-rF-JxL" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Calendar" image="calendar" catalog="system" id="0ky-xr-pJK"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="b1n-jg-9Qf">
@@ -356,6 +347,9 @@
             <point key="canvasLocation" x="6751" y="-428"/>
         </scene>
     </scenes>
+    <inferredMetricsTieBreakers>
+        <segue reference="t25-Cz-hc6"/>
+    </inferredMetricsTieBreakers>
     <resources>
         <image name="calendar" catalog="system" width="128" height="107"/>
         <image name="chart.line.uptrend.xyaxis" catalog="system" width="128" height="102"/>

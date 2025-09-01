@@ -13,6 +13,11 @@ import CryptoKit
 class RegisterStep1ViewController: UIViewController {
     @IBOutlet weak var usernameTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
+    @IBOutlet weak var firstNameTextField: UITextField!
+    @IBOutlet weak var lastNameTextField: UITextField!
+    @IBOutlet weak var emailTextField: UITextField!
+    @IBOutlet weak var phoneNumberTextField: UITextField!
+    @IBOutlet weak var birthdayDatePicker: UIDatePicker!
     @IBOutlet weak var nextButton: UIButton!
 
     override func viewDidLoad() {
@@ -23,10 +28,8 @@ class RegisterStep1ViewController: UIViewController {
          if let enteredUsername = usernameTextField.text,
             !enteredUsername.isEmpty,
             let enteredPassword = passwordTextField.text,
-              enteredPassword.count >= 8,
-            !enteredPassword.isEmpty {
+              enteredPassword.count >= 8 {
              
-             let currentPassword = sha256(for: enteredPassword)
              
              guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
              let context = appDelegate.persistentContainer.viewContext
@@ -39,7 +42,7 @@ class RegisterStep1ViewController: UIViewController {
          
              
          } else {
-             let alert = UIAlertController(title: "Error", message: "Please enter both username and password.", preferredStyle: .alert)
+             let alert = UIAlertController(title: "Error", message: "Please fill out all fields.", preferredStyle: .alert)
              alert.addAction(UIAlertAction(title: "OK", style: .default))
              present(alert, animated: true)
              return
@@ -55,7 +58,7 @@ class RegisterStep1ViewController: UIViewController {
         }
 
         
-        self.performSegue(withIdentifier: "toRegisterStep2", sender: self)
+        self.performSegue(withIdentifier: "toMainPage", sender: self)
     }
              
     
