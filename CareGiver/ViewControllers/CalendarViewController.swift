@@ -453,10 +453,21 @@
                     let isCurrentDate = Calendar.current.isDate(selectedTaskDate ?? Date(), inSameDayAs: currentSelectedDate)
                     if isCurrentDate {
                         let calendar = Calendar.current
-                        let startHour = calendar.component(.hour, from: start)
-                        let startMinute = calendar.component(.minute, from: start)
-                        let endHour = calendar.component(.hour, from: end)
-                        let endMinute = calendar.component(.minute, from: end)
+                        var startHour = calendar.component(.hour, from: start)
+                        var startMinute = calendar.component(.minute, from: start)
+                        startMinute += 30
+                        if startMinute >= 60 {
+                            startMinute -= 60
+                            startHour += 1
+                        }
+
+                        var endHour = calendar.component(.hour, from: end)
+                        var endMinute = calendar.component(.minute, from: end)
+                        endMinute += 30
+                        if endMinute >= 60 {
+                            endMinute -= 60
+                            endHour += 1
+                        }
 
                         if hourIndex == startHour && hourIndex == endHour {
                             cell.showShadedRegion(startMinute: startMinute, endMinute: endMinute)
