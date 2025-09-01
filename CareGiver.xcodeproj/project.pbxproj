@@ -41,6 +41,7 @@
 		A1B2C3D4E646 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E647 /* LaunchScreen.storyboard */; };
 		A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E681 /* FinancialAssistanceViewController.swift */; };
 		E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */; };
+		E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -80,6 +81,7 @@
 		A1B2C3D4E650 /* CareGiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CareGiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D4E681 /* FinancialAssistanceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialAssistanceViewController.swift; sourceTree = "<group>"; };
 		E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GovernmentAidInfoViewController.swift; sourceTree = "<group>"; };
+		E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AidDetailViewController 2.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +127,7 @@
 		A1B2C3D4E655 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */,
 				E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */,
 				6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */,
 				A1B2C3D4E601 /* LoginViewController.swift */,
@@ -256,6 +259,7 @@
 				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
+				A1B2C3D4E602 /* RegisterStep2ViewController.swift in Sources */,
 				A1B2C3D4E604 /* MainTabBarController.swift in Sources */,
 				A1B2C3D4E606 /* HomeViewController.swift in Sources */,
 				A1B2C3D4E608 /* CalendarViewController.swift in Sources */,
@@ -278,6 +282,7 @@
 				A1B2C3D4E633 /* Caregiver+CoreDataClass.swift in Sources */,
 				A1B2C3D4E635 /* Caregiver+CoreDataProperties.swift in Sources */,
 				A1B2C3D4E637 /* Patient+CoreDataClass.swift in Sources */,
+				E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */,
 				A1B2C3D4E639 /* Patient+CoreDataProperties.swift in Sources */,
 				A1B2C3D4E5F6 /* AppDelegate.swift in Sources */,
 				A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */,

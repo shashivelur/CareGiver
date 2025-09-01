@@ -1,13 +1,18 @@
 import UIKit
 
 class GovernmentAidInfoViewController: UIViewController {
+    private var vaBox: UIView?
+    private var medicareBox: UIView?
+    private var medicaidBox: UIView?
+    private var socialSecurityBox: UIView?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         title = "Government Aid Benefits"
         setupInfoBoxes()
     }
-    
+
     private func setupInfoBoxes() {
         let stackView = UIStackView()
         stackView.axis = .vertical
@@ -15,15 +20,35 @@ class GovernmentAidInfoViewController: UIViewController {
         stackView.alignment = .fill
         stackView.translatesAutoresizingMaskIntoConstraints = false
 
-    let vaBox = createInfoBox(title: "VA Benefits", description: "VA provides health care, disability, and caregiver support for veterans with dementia, including respite care and financial aid for family caregivers.")
-    let medicareBox = createInfoBox(title: "Medicare", description: "Medicare covers hospital, medical, and some home health services for dementia patients. Caregivers can use these benefits for patient care needs.")
-    let medicaidBox = createInfoBox(title: "Medicaid", description: "Medicaid helps pay for long-term care, home care, and support services for dementia patients, easing costs for caregivers.")
-    let socialSecurityBox = createInfoBox(title: "Social Security Disability Insurance (SSDI)", description: "SSDI gives monthly payments to people with dementia. Caregivers can help patients apply and manage benefits.")
+        vaBox = createInfoBox(title: "VA Benefits", description: "VA provides health care, disability, and caregiver support for veterans with dementia, including respite care and financial aid for family caregivers.")
+        medicareBox = createInfoBox(title: "Medicare", description: "Medicare covers hospital, medical, and some home health services for dementia patients. Caregivers can use these benefits for patient care needs.")
+        medicaidBox = createInfoBox(title: "Medicaid", description: "Medicaid helps pay for long-term care, home care, and support services for dementia patients, easing costs for caregivers.")
+        socialSecurityBox = createInfoBox(title: "Social Security Disability Insurance (SSDI)", description: "SSDI gives monthly payments to people with dementia. Caregivers can help patients apply and manage benefits.")
 
-        stackView.addArrangedSubview(vaBox)
-        stackView.addArrangedSubview(medicareBox)
-        stackView.addArrangedSubview(medicaidBox)
-        stackView.addArrangedSubview(socialSecurityBox)
+        if let vaBox = vaBox {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(vaBoxTapped))
+            vaBox.addGestureRecognizer(tap)
+            vaBox.isUserInteractionEnabled = true
+            stackView.addArrangedSubview(vaBox)
+        }
+        if let medicareBox = medicareBox {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(medicareBoxTapped))
+            medicareBox.addGestureRecognizer(tap)
+            medicareBox.isUserInteractionEnabled = true
+            stackView.addArrangedSubview(medicareBox)
+        }
+        if let medicaidBox = medicaidBox {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(medicaidBoxTapped))
+            medicaidBox.addGestureRecognizer(tap)
+            medicaidBox.isUserInteractionEnabled = true
+            stackView.addArrangedSubview(medicaidBox)
+        }
+        if let socialSecurityBox = socialSecurityBox {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(ssdiBoxTapped))
+            socialSecurityBox.addGestureRecognizer(tap)
+            socialSecurityBox.isUserInteractionEnabled = true
+            stackView.addArrangedSubview(socialSecurityBox)
+        }
 
         view.addSubview(stackView)
         NSLayoutConstraint.activate([
@@ -31,6 +56,24 @@ class GovernmentAidInfoViewController: UIViewController {
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20)
         ])
+    }
+
+    // MARK: - Box Tap Handlers
+    @objc private func vaBoxTapped() {
+        let vc = AidDetailViewController(titleText: "VA page")
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    @objc private func medicareBoxTapped() {
+        let vc = AidDetailViewController(titleText: "Medicare page")
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    @objc private func medicaidBoxTapped() {
+        let vc = AidDetailViewController(titleText: "Medicaid page")
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    @objc private func ssdiBoxTapped() {
+        let vc = AidDetailViewController(titleText: "SSDI page")
+        navigationController?.pushViewController(vc, animated: true)
     }
     
     private func createInfoBox(title: String, description: String) -> UIView {
