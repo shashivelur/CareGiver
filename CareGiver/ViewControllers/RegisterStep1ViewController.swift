@@ -22,6 +22,7 @@ class RegisterStep1ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupKeyboardDismissal()
     }
 
     @IBAction func nextButtonTapped(_ sender: UIButton) {
@@ -61,6 +62,15 @@ class RegisterStep1ViewController: UIViewController {
         self.performSegue(withIdentifier: "toMainPage", sender: self)
     }
              
+    private func setupKeyboardDismissal() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
     
     func sha256(for string: String) -> String? {
         // 1. Convert the string to Data using UTF-8 encoding.

@@ -1,190 +1,679 @@
 import UIKit
 import CoreData
+import MapKit
 
 class HomeViewController: UIViewController {
     
-    var currentCaregiver: Caregiver?
-    
-    @IBOutlet weak var welcomeLabel: UILabel?
-    @IBOutlet weak var patientsCountLabel: UILabel?
-    @IBOutlet weak var quickActionsStackView: UIStackView?
+    private var scrollView: UIScrollView!
+    private var contentView: UIView!
+    private var defaultMessageLabel: UILabel!
+    private var upcomingTasksLabel: UILabel!
+    private var tasksStackView: UIStackView!
+    private var mapView: MKMapView!
+    private var addPatientButton: UIButton!
+    private var patientTabsScrollView: UIScrollView!
+    private var patientTabsStackView: UIStackView!
+    private var selectedPatientIndex = 0
+    private var patients: [Patient] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupUI()
+        view.backgroundColor = .systemBackground
+        title = "Home"
+        setupAddPatientButton()
+        setupScrollView()
+        loadPatients()
+        checkPatientStatus()
+        
+        // Listen for patient creation notifications
+        NotificationCenter.default.addObserver(self, selector: #selector(patientCreated), name: NSNotification.Name("PatientCreated"), object: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        updateUI()
+        loadPatients()
+        checkPatientStatus()
     }
     
-    private func setupUI() {
-        title = "Home"
-        view.backgroundColor = .systemBackground
-        
-        // Create UI elements programmatically if storyboard outlets are not connected
-        if welcomeLabel == nil {
-            createUIElements()
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func patientCreated() {
+        DispatchQueue.main.async {
+            self.loadPatients()
+            self.checkPatientStatus()
         }
-        
-        updateUI()
     }
     
-    private func createUIElements() {
-        // Welcome label
-        let welcomeLabelView = UILabel()
-        welcomeLabelView.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        welcomeLabelView.textAlignment = .center
-        welcomeLabelView.numberOfLines = 0
-        welcomeLabel = welcomeLabelView
+    private func loadPatients() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let context = appDelegate.persistentContainer.viewContext
         
-        // Patients count label
-        let patientsCountLabelView = UILabel()
-        patientsCountLabelView.font = UIFont.systemFont(ofSize: 18)
-        patientsCountLabelView.textAlignment = .center
-        patientsCountLabelView.textColor = .systemBlue
-        patientsCountLabel = patientsCountLabelView
+        let request: NSFetchRequest<Patient> = Patient.fetchRequest()
         
-        // Stack view for quick actions
-        let quickActionsStackViewView = UIStackView()
-        quickActionsStackViewView.axis = .vertical
-        quickActionsStackViewView.spacing = 16
-        quickActionsStackViewView.alignment = .fill
-        quickActionsStackViewView.distribution = .fillEqually
-        quickActionsStackView = quickActionsStackViewView
+        do {
+            patients = try context.fetch(request)
+        } catch {
+            print("Error loading patients: \(error)")
+            patients = []
+        }
+    }
+    
+    private func setupAddPatientButton() {
+        addPatientButton = UIButton(type: .system)
+        addPatientButton.setTitle(" Add Patient", for: .normal)
+        addPatientButton.setImage(UIImage(systemName: "plus"), for: .normal)
+        addPatientButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        addPatientButton.addTarget(self, action: #selector(addPatientTapped), for: .touchUpInside)
         
-        // Add quick action buttons
-        let addPatientButton = createQuickActionButton(title: "Add New Patient", action: #selector(addPatientTapped))
-        let viewPatientsButton = createQuickActionButton(title: "View All Patients", action: #selector(viewPatientsTapped))
-        let quickCheckupButton = createQuickActionButton(title: "Quick Checkup", action: #selector(quickCheckupTapped))
+        let barButton = UIBarButtonItem(customView: addPatientButton)
+        navigationItem.rightBarButtonItem = barButton
+    }
+    
+    private func setupScrollView() {
+        scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
         
-        quickActionsStackView?.addArrangedSubview(addPatientButton)
-        quickActionsStackView?.addArrangedSubview(viewPatientsButton)
-        quickActionsStackView?.addArrangedSubview(quickCheckupButton)
+        contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentView)
         
-        // Add to view with constraints
-        if let welcomeLabel = welcomeLabel,
-           let patientsCountLabel = patientsCountLabel,
-           let quickActionsStackView = quickActionsStackView {
-            view.addSubview(welcomeLabel)
-            view.addSubview(patientsCountLabel)
-            view.addSubview(quickActionsStackView)
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+        ])
+    }
+    
+    private func checkPatientStatus() {
+        if patients.isEmpty {
+            showDefaultView()
+        } else {
+            showPatientHomeView()
+        }
+    }
+    
+    private func setupPatientTabs() {
+        // Remove existing tabs if any
+        patientTabsScrollView?.removeFromSuperview()
         
-            welcomeLabel.translatesAutoresizingMaskIntoConstraints = false
-            patientsCountLabel.translatesAutoresizingMaskIntoConstraints = false
-            quickActionsStackView.translatesAutoresizingMaskIntoConstraints = false
+        patientTabsScrollView = UIScrollView()
+        patientTabsScrollView.showsHorizontalScrollIndicator = false
+        patientTabsScrollView.translatesAutoresizingMaskIntoConstraints = false
+        
+        patientTabsStackView = UIStackView()
+        patientTabsStackView.axis = .horizontal
+        patientTabsStackView.spacing = 8
+        patientTabsStackView.alignment = .fill
+        patientTabsStackView.distribution = .fillEqually
+        patientTabsStackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        patientTabsScrollView.addSubview(patientTabsStackView)
+        contentView.addSubview(patientTabsScrollView)
+        
+        // Calculate tab width based on number of patients
+        let maxTabWidth: CGFloat = min(120, view.frame.width / CGFloat(patients.count) - 16)
+        
+        for (index, patient) in patients.enumerated() {
+            let tabButton = UIButton(type: .system)
+            tabButton.setTitle(patient.firstName ?? "Patient \(index + 1)", for: .normal)
+            tabButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+            tabButton.backgroundColor = index == selectedPatientIndex ? .systemBlue : .secondarySystemBackground
+            tabButton.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
+            tabButton.layer.cornerRadius = 8
+            tabButton.tag = index
+            tabButton.addTarget(self, action: #selector(patientTabTapped(_:)), for: .touchUpInside)
+            tabButton.translatesAutoresizingMaskIntoConstraints = false
+            
+            patientTabsStackView.addArrangedSubview(tabButton)
             
             NSLayoutConstraint.activate([
-                welcomeLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-                welcomeLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-                welcomeLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-                
-                patientsCountLabel.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 20),
-                patientsCountLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-                patientsCountLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-                
-                quickActionsStackView.topAnchor.constraint(equalTo: patientsCountLabel.bottomAnchor, constant: 40),
-                quickActionsStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-                quickActionsStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
-                quickActionsStackView.heightAnchor.constraint(equalToConstant: 180)
+                tabButton.heightAnchor.constraint(equalToConstant: 36),
+                tabButton.widthAnchor.constraint(greaterThanOrEqualToConstant: maxTabWidth)
             ])
         }
+        
+        NSLayoutConstraint.activate([
+            patientTabsScrollView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            patientTabsScrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            patientTabsScrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            patientTabsScrollView.heightAnchor.constraint(equalToConstant: 44),
+            
+            patientTabsStackView.topAnchor.constraint(equalTo: patientTabsScrollView.topAnchor),
+            patientTabsStackView.leadingAnchor.constraint(equalTo: patientTabsScrollView.leadingAnchor),
+            patientTabsStackView.trailingAnchor.constraint(equalTo: patientTabsScrollView.trailingAnchor),
+            patientTabsStackView.bottomAnchor.constraint(equalTo: patientTabsScrollView.bottomAnchor),
+            patientTabsStackView.heightAnchor.constraint(equalTo: patientTabsScrollView.heightAnchor)
+        ])
     }
     
-    private func createQuickActionButton(title: String, action: Selector) -> UIButton {
-        let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        button.backgroundColor = .systemBlue
-        button.setTitleColor(.white, for: .normal)
-        button.layer.cornerRadius = 8
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        button.addTarget(self, action: action, for: .touchUpInside)
-        return button
+    @objc private func patientTabTapped(_ sender: UIButton) {
+        selectedPatientIndex = sender.tag
+        updateTabAppearance()
+        showSelectedPatientInfo()
     }
     
-    private func updateUI() {
-        guard let caregiver = currentCaregiver else {
-            welcomeLabel?.text = "Welcome to CareGiver App"
-            patientsCountLabel?.text = "Please login to continue"
-            return
+    private func updateTabAppearance() {
+        for (index, view) in patientTabsStackView.arrangedSubviews.enumerated() {
+            if let button = view as? UIButton {
+                button.backgroundColor = index == selectedPatientIndex ? .systemBlue : .secondarySystemBackground
+                button.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
+            }
+        }
+    }
+    
+    private func showDefaultView() {
+        clearContentView()
+        
+        defaultMessageLabel = UILabel()
+        defaultMessageLabel.text = "Please create a patient to continue."
+        defaultMessageLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        defaultMessageLabel.textAlignment = .center
+        defaultMessageLabel.textColor = .secondaryLabel
+        defaultMessageLabel.numberOfLines = 0
+        defaultMessageLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        contentView.addSubview(defaultMessageLabel)
+        
+        NSLayoutConstraint.activate([
+            defaultMessageLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            defaultMessageLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            defaultMessageLabel.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: 20),
+            defaultMessageLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20),
+            contentView.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor)
+        ])
+    }
+    
+    private func showPatientHomeView() {
+        clearContentView()
+        
+        if patients.count > 1 {
+            setupPatientTabs()
         }
         
-        welcomeLabel?.text = "Welcome, \(caregiver.fullName)!"
+        showSelectedPatientInfo()
+    }
+    
+    private func showSelectedPatientInfo() {
+            // Remove existing patient info views
+            contentView.subviews.forEach { view in
+                if view != patientTabsScrollView {
+                    view.removeFromSuperview()
+                }
+            }
+            
+            guard selectedPatientIndex < patients.count else { return }
+            let selectedPatient = patients[selectedPatientIndex]
+            
+            let topAnchor = patients.count > 1 ? patientTabsScrollView.bottomAnchor : contentView.topAnchor
+            let topConstant: CGFloat = patients.count > 1 ? 20 : 20
+            
+            // Patient Info Section
+            let patientInfoView = createPatientInfoView(for: selectedPatient)
+            contentView.addSubview(patientInfoView)
+            
+            // Upcoming tasks label
+            upcomingTasksLabel = UILabel()
+            upcomingTasksLabel.text = "Upcoming Tasks"
+            upcomingTasksLabel.font = UIFont.boldSystemFont(ofSize: 24)
+            upcomingTasksLabel.textColor = .label
+            upcomingTasksLabel.translatesAutoresizingMaskIntoConstraints = false
+            
+            // Tasks stack view
+            tasksStackView = UIStackView()
+            tasksStackView.axis = .vertical
+            tasksStackView.spacing = 12
+            tasksStackView.alignment = .fill
+            tasksStackView.translatesAutoresizingMaskIntoConstraints = false
+            
+            // Add 3 sample task boxes
+            for i in 1...3 {
+                let taskBox = createTaskBox(title: "Task \(i)", description: "Sample task description \(i)")
+                tasksStackView.addArrangedSubview(taskBox)
+            }
+            
+            // Map view
+            mapView = MKMapView()
+            mapView.translatesAutoresizingMaskIntoConstraints = false
+            mapView.layer.cornerRadius = 12
+            
+            // Set location to 10606 Marbury Court, Austin, Texas
+            let coordinate = CLLocationCoordinate2D(latitude: 30.3461, longitude: -97.8147)
+            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+            mapView.setRegion(region, animated: false)
+            
+            // Add annotation
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = coordinate
+            annotation.title = "10606 Marbury Court"
+            annotation.subtitle = "Austin, Texas"
+            mapView.addAnnotation(annotation)
+            
+            contentView.addSubview(upcomingTasksLabel)
+            contentView.addSubview(tasksStackView)
+            contentView.addSubview(mapView)
+            
+            NSLayoutConstraint.activate([
+                patientInfoView.topAnchor.constraint(equalTo: topAnchor, constant: topConstant),
+                patientInfoView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                patientInfoView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                
+                upcomingTasksLabel.topAnchor.constraint(equalTo: patientInfoView.bottomAnchor, constant: 20),
+                upcomingTasksLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                upcomingTasksLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                
+                tasksStackView.topAnchor.constraint(equalTo: upcomingTasksLabel.bottomAnchor, constant: 16),
+                tasksStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                tasksStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                
+                mapView.topAnchor.constraint(equalTo: tasksStackView.bottomAnchor, constant: 20),
+                mapView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                mapView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                mapView.heightAnchor.constraint(equalToConstant: 250),
+                mapView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
+            ])
+            
+            // Force layout update
+            DispatchQueue.main.async {
+                self.view.layoutIfNeeded()
+                self.scrollView.contentSize = CGSize(width: self.contentView.frame.width, height: self.contentView.frame.height)
+            }
+        }
+    
+    private func createPatientInfoView(for patient: Patient) -> UIView {
+        let containerView = UIView()
+        containerView.backgroundColor = .secondarySystemBackground
+        containerView.layer.cornerRadius = 12
+        containerView.translatesAutoresizingMaskIntoConstraints = false
         
-        let patientsCount = CoreDataManager.shared.fetchPatients(for: caregiver).count
-        patientsCountLabel?.text = "You are caring for \(patientsCount) patient\(patientsCount == 1 ? "" : "s")"
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.spacing = 8
+        stackView.alignment = .leading
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let nameLabel = UILabel()
+        nameLabel.text = "\(patient.firstName ?? "") \(patient.lastName ?? "")"
+        nameLabel.font = UIFont.boldSystemFont(ofSize: 20)
+        nameLabel.textColor = .label
+        
+        let emailLabel = UILabel()
+        emailLabel.text = "Email: \(patient.email ?? "N/A")"
+        emailLabel.font = UIFont.systemFont(ofSize: 16)
+        emailLabel.textColor = .secondaryLabel
+        
+        let phoneLabel = UILabel()
+        phoneLabel.text = "Phone: \(patient.phoneNumber ?? "N/A")"
+        phoneLabel.font = UIFont.systemFont(ofSize: 16)
+        phoneLabel.textColor = .secondaryLabel
+        
+        let dobLabel = UILabel()
+        if let dob = patient.dateOfBirth {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            dobLabel.text = "Date of Birth: \(formatter.string(from: dob))"
+        } else {
+            dobLabel.text = "Date of Birth: N/A"
+        }
+        dobLabel.font = UIFont.systemFont(ofSize: 16)
+        dobLabel.textColor = .secondaryLabel
+        
+        let veteranLabel = UILabel()
+        veteranLabel.text = "Veteran Status: \(patient.veteranStatus ? "Yes" : "No")"
+        veteranLabel.font = UIFont.systemFont(ofSize: 16)
+        veteranLabel.textColor = .secondaryLabel
+        
+        let incomeLabel = UILabel()
+        if let income = patient.value(forKey: "incomeRange") as? String {
+            incomeLabel.text = "Income Range: \(income)"
+        } else {
+            incomeLabel.text = "Income Range: N/A"
+        }
+        incomeLabel.font = UIFont.systemFont(ofSize: 16)
+        incomeLabel.textColor = .secondaryLabel
+        
+        stackView.addArrangedSubview(nameLabel)
+        stackView.addArrangedSubview(emailLabel)
+        stackView.addArrangedSubview(phoneLabel)
+        stackView.addArrangedSubview(dobLabel)
+        stackView.addArrangedSubview(veteranLabel)
+        stackView.addArrangedSubview(incomeLabel)
+        
+        containerView.addSubview(stackView)
+        
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 16),
+            stackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+            stackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            stackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
+        ])
+        
+        return containerView
+    }
+    
+    private func createTaskBox(title: String, description: String) -> UIView {
+        let box = UIView()
+        box.backgroundColor = .secondarySystemBackground
+        box.layer.cornerRadius = 12
+        box.layer.shadowColor = UIColor.black.cgColor
+        box.layer.shadowOpacity = 0.1
+        box.layer.shadowOffset = CGSize(width: 0, height: 2)
+        box.layer.shadowRadius = 4
+        box.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
+        titleLabel.textColor = .label
+        
+        let descLabel = UILabel()
+        descLabel.text = description
+        descLabel.font = UIFont.systemFont(ofSize: 14)
+        descLabel.textColor = .secondaryLabel
+        descLabel.numberOfLines = 0
+        
+        let stackView = UIStackView(arrangedSubviews: [titleLabel, descLabel])
+        stackView.axis = .vertical
+        stackView.spacing = 4
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        box.addSubview(stackView)
+        
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: box.topAnchor, constant: 16),
+            stackView.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 16),
+            stackView.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -16),
+            stackView.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -16),
+            box.heightAnchor.constraint(greaterThanOrEqualToConstant: 80)
+        ])
+        
+        return box
+    }
+    
+    private func clearContentView() {
+        contentView.subviews.forEach { $0.removeFromSuperview() }
     }
     
     @objc private func addPatientTapped() {
-        let alert = UIAlertController(title: "Add New Patient", message: "Enter patient information", preferredStyle: .alert)
-        
-        alert.addTextField { textField in
-            textField.placeholder = "First Name"
-        }
-        
-        alert.addTextField { textField in
-            textField.placeholder = "Last Name"
-        }
-        
-        alert.addTextField { textField in
-            textField.placeholder = "Email (Optional)"
-        }
-        
-        alert.addTextField { textField in
-            textField.placeholder = "Phone Number (Optional)"
-        }
-        
-        let addAction = UIAlertAction(title: "Add", style: .default) { _ in
-            guard let firstName = alert.textFields?[0].text, !firstName.isEmpty,
-                  let lastName = alert.textFields?[1].text, !lastName.isEmpty,
-                  let caregiver = self.currentCaregiver else {
-                self.showAlert(message: "Please enter patient's first and last name")
-                return
-            }
-            
-            let email = alert.textFields?[2].text?.isEmpty == false ? alert.textFields?[2].text : nil
-            let phoneNumber = alert.textFields?[3].text?.isEmpty == false ? alert.textFields?[3].text : nil
-            
-            _ = CoreDataManager.shared.createPatient(
-                firstName: firstName,
-                lastName: lastName,
-                dateOfBirth: Date(timeIntervalSinceNow: -365*24*60*60*25), // Default 25 years ago
-                email: email,
-                phoneNumber: phoneNumber,
-                caregiver: caregiver
-            )
-            
-            self.updateUI()
-            self.showAlert(message: "Patient added successfully!")
-        }
-        
-        alert.addAction(addAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        
-        present(alert, animated: true)
+        let addPatientVC = AddPatientViewController()
+        let navController = UINavigationController(rootViewController: addPatientVC)
+        present(navController, animated: true)
+    }
+}
+
+// MARK: - Add Patient View Controller
+class AddPatientViewController: UIViewController {
+    
+    private var scrollView: UIScrollView!
+    private var contentView: UIView!
+    private var firstNameTextField: UITextField!
+    private var lastNameTextField: UITextField!
+    private var emailTextField: UITextField!
+    private var phoneTextField: UITextField!
+    private var dateOfBirthPicker: UIDatePicker!
+    private var veteranCheckbox: UIButton!
+    private var veteranLabel: UILabel!
+    private var incomeDropdown: UIButton!
+    private var isVeteran = false
+    
+    private let incomeOptions = ["$100,000 or less", "$100,000 to $200,000", "$200,000 to $300,000", "$300,000 and above"]
+    private var selectedIncome = ""
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+        title = "Add Patient"
+        setupNavigationBar()
+        setupScrollView()
+        setupUI()
+        setupKeyboardDismissal()
     }
     
-    @objc private func viewPatientsTapped() {
-        guard let caregiver = currentCaregiver else { return }
+    private func setupNavigationBar() {
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelTapped))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(saveTapped))
+    }
+    
+    private func setupScrollView() {
+        scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
         
-        let patients = CoreDataManager.shared.fetchPatients(for: caregiver)
+        contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentView)
         
-        if patients.isEmpty {
-            showAlert(message: "No patients found. Add a patient first.")
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+        ])
+    }
+    
+    private func setupUI() {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.spacing = 20
+        stackView.alignment = .fill
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // First Name
+        firstNameTextField = createTextField(placeholder: "First Name")
+        stackView.addArrangedSubview(createFormSection(title: "First Name", content: firstNameTextField))
+        
+        // Last Name
+        lastNameTextField = createTextField(placeholder: "Last Name")
+        stackView.addArrangedSubview(createFormSection(title: "Last Name", content: lastNameTextField))
+        
+        // Email
+        emailTextField = createTextField(placeholder: "Email")
+        emailTextField.keyboardType = .emailAddress
+        stackView.addArrangedSubview(createFormSection(title: "Email", content: emailTextField))
+        
+        // Phone Number
+        phoneTextField = createTextField(placeholder: "Phone Number")
+        phoneTextField.keyboardType = .phonePad
+        stackView.addArrangedSubview(createFormSection(title: "Phone Number", content: phoneTextField))
+        
+        // Date of Birth
+        dateOfBirthPicker = UIDatePicker()
+        dateOfBirthPicker.datePickerMode = .date
+        dateOfBirthPicker.preferredDatePickerStyle = .compact
+        dateOfBirthPicker.maximumDate = Date()
+        stackView.addArrangedSubview(createFormSection(title: "Date of Birth", content: dateOfBirthPicker))
+        
+        // Veteran Status
+        let veteranContainer = UIView()
+        veteranCheckbox = UIButton(type: .system)
+        veteranCheckbox.setImage(UIImage(systemName: "square"), for: .normal)
+        veteranCheckbox.setImage(UIImage(systemName: "checkmark.square.fill"), for: .selected)
+        veteranCheckbox.addTarget(self, action: #selector(veteranCheckboxTapped), for: .touchUpInside)
+        veteranCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        
+        veteranLabel = UILabel()
+        veteranLabel.text = "Are they a veteran?"
+        veteranLabel.font = UIFont.systemFont(ofSize: 16)
+        veteranLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        veteranContainer.addSubview(veteranCheckbox)
+        veteranContainer.addSubview(veteranLabel)
+        
+        NSLayoutConstraint.activate([
+            veteranCheckbox.leadingAnchor.constraint(equalTo: veteranContainer.leadingAnchor),
+            veteranCheckbox.centerYAnchor.constraint(equalTo: veteranContainer.centerYAnchor),
+            veteranCheckbox.widthAnchor.constraint(equalToConstant: 24),
+            veteranCheckbox.heightAnchor.constraint(equalToConstant: 24),
+            
+            veteranLabel.leadingAnchor.constraint(equalTo: veteranCheckbox.trailingAnchor, constant: 8),
+            veteranLabel.centerYAnchor.constraint(equalTo: veteranContainer.centerYAnchor),
+            veteranLabel.trailingAnchor.constraint(equalTo: veteranContainer.trailingAnchor),
+            
+            veteranContainer.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        
+        stackView.addArrangedSubview(createFormSection(title: "Veteran Status", content: veteranContainer))
+        
+        // Income Dropdown
+        incomeDropdown = UIButton(type: .system)
+        incomeDropdown.setTitle("Select Income Range", for: .normal)
+        incomeDropdown.titleLabel?.font = UIFont.systemFont(ofSize: 16)
+        incomeDropdown.contentHorizontalAlignment = .left
+        incomeDropdown.backgroundColor = .secondarySystemBackground
+        incomeDropdown.layer.cornerRadius = 8
+        incomeDropdown.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+        incomeDropdown.addTarget(self, action: #selector(incomeDropdownTapped), for: .touchUpInside)
+        incomeDropdown.translatesAutoresizingMaskIntoConstraints = false
+        incomeDropdown.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        
+        stackView.addArrangedSubview(createFormSection(title: "Family Income Range", content: incomeDropdown))
+        
+        contentView.addSubview(stackView)
+        
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -100)
+        ])
+        
+        // Ensure content view height is at least as tall as the stack view
+        let contentHeightConstraint = contentView.heightAnchor.constraint(greaterThanOrEqualTo: stackView.heightAnchor, constant: 140)
+        contentHeightConstraint.priority = UILayoutPriority(999)
+        contentHeightConstraint.isActive = true
+    }
+    
+    private func createTextField(placeholder: String) -> UITextField {
+        let textField = UITextField()
+        textField.placeholder = placeholder
+        textField.borderStyle = .roundedRect
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        return textField
+    }
+    
+    private func createFormSection(title: String, content: UIView) -> UIView {
+        let container = UIView()
+        
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
+        titleLabel.textColor = .label
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        content.translatesAutoresizingMaskIntoConstraints = false
+        
+        container.addSubview(titleLabel)
+        container.addSubview(content)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            
+            content.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            content.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            content.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ])
+        
+        return container
+    }
+    
+    private func setupKeyboardDismissal() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    @objc private func veteranCheckboxTapped() {
+        isVeteran.toggle()
+        veteranCheckbox.isSelected = isVeteran
+    }
+    
+    @objc private func incomeDropdownTapped() {
+        let alertController = UIAlertController(title: "Select Income Range", message: nil, preferredStyle: .actionSheet)
+        
+        for option in incomeOptions {
+            let action = UIAlertAction(title: option, style: .default) { _ in
+                self.selectedIncome = option
+                self.incomeDropdown.setTitle(option, for: .normal)
+            }
+            alertController.addAction(action)
+        }
+        
+        alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        if let popover = alertController.popoverPresentationController {
+            popover.sourceView = incomeDropdown
+            popover.sourceRect = incomeDropdown.bounds
+        }
+        
+        present(alertController, animated: true)
+    }
+    
+    @objc private func cancelTapped() {
+        dismiss(animated: true)
+    }
+    
+    @objc private func saveTapped() {
+        guard let firstName = firstNameTextField.text, !firstName.isEmpty,
+              let lastName = lastNameTextField.text, !lastName.isEmpty,
+              let email = emailTextField.text, !email.isEmpty,
+              let phone = phoneTextField.text, !phone.isEmpty,
+              !selectedIncome.isEmpty else {
+            showAlert(message: "Please fill in all fields")
             return
         }
         
-        let patientsInfo = patients.map { "\($0.fullName) - Age: \($0.age)" }.joined(separator: "\n")
-        showAlert(message: "Your Patients:\n\n\(patientsInfo)")
+        savePatient()
     }
     
-    @objc private func quickCheckupTapped() {
-        showAlert(message: "Quick Checkup feature coming soon!")
+    private func savePatient() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let context = appDelegate.persistentContainer.viewContext
+        
+        let patient = Patient(context: context)
+        patient.firstName = firstNameTextField.text
+        patient.lastName = lastNameTextField.text
+        patient.email = emailTextField.text
+        patient.phoneNumber = phoneTextField.text
+        patient.dateOfBirth = dateOfBirthPicker.date
+        patient.veteranStatus = isVeteran
+        patient.setValue(selectedIncome, forKey: "incomeRange")
+        
+        do {
+            try context.save()
+            // Post notification before dismissing
+            NotificationCenter.default.post(name: NSNotification.Name("PatientCreated"), object: nil)
+            
+            dismiss(animated: true)
+        } catch {
+            showAlert(message: "Failed to save patient: \(error.localizedDescription)")
+        }
     }
     
     private func showAlert(message: String) {
-        let alert = UIAlertController(title: "Info", message: message, preferredStyle: .alert)
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
