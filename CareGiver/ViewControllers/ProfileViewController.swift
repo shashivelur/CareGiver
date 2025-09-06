@@ -33,7 +33,7 @@ class ProfileViewController: UIViewController {
         profileImageView.contentMode = .scaleAspectFit
         
         // Info labels
-        let nameLabel = createInfoLabel(title: "Name:", value: currentCaregiver?.fullName ?? "N/A")
+        let nameLabel = createInfoLabel(title: "Name:", value: currentCaregiver?.firstName ?? "N/A")
         let emailLabel = createInfoLabel(title: "Email:", value: currentCaregiver?.email ?? "N/A")
         let phoneLabel = createInfoLabel(title: "Phone:", value: currentCaregiver?.phoneNumber ?? "N/A")
         let usernameLabel = createInfoLabel(title: "Username:", value: currentCaregiver?.username ?? "N/A")
