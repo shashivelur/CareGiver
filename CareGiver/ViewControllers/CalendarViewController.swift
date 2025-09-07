@@ -1,6 +1,5 @@
     import UIKit
-
-    import UIKit
+    import UserNotifications
 
     class TrustedPeoplePickerViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
         var trustedPeople: [TrustedPerson] = []
@@ -203,6 +202,8 @@
         var tempDestination: String?
         var tempDescription: String?
         var tempTrustedPeople: [TrustedPerson] = []
+        var notificationMinutesBefore: Int = 10 // default 10 minutes before
+
 
         let calendarView = UICalendarView()
         let selectedDateLabel = UILabel()
@@ -270,6 +271,12 @@
 
         override func viewDidLoad() {
             super.viewDidLoad()
+            UNUserNotificationCenter.current().delegate = self
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+                if let error = error {
+                    print("Notification permission error: \(error)")
+                }
+            }
             title = "Calendar"
             view.backgroundColor = .systemBackground
 
@@ -443,13 +450,11 @@
                 textField?.isUserInteractionEnabled = true
             }
 
-            // 👇 NEW Trusted People tap handler
             [trustedField].forEach { textField in
                 let tap = UITapGestureRecognizer(target: self, action: #selector(self.trustedPeopleFieldTapped(_:)))
                 textField?.addGestureRecognizer(tap)
                 textField?.isUserInteractionEnabled = true
             }
-
             let add = UIAlertAction(title: "Add", style: .default) { _ in
                 let fields = alert.textFields ?? []
                 self.tempTaskTitle = fields[safe: 0]?.text
@@ -459,11 +464,10 @@
                 self.tempDestination = fields[safe: 4]?.text
                 self.tempDescription = fields[safe: 5]?.text
                 self.tempDateText = fields[safe: 6]?.text
-                // 👇 Trusted People comes from tempTrustedPeople, not text field
 
                 guard let title = self.tempTaskTitle, !title.isEmpty else { return }
 
-                // Parse date and time and add task (same logic as before)
+                // Parse date and time and add task
                 let dateFormatter = DateFormatter()
                 dateFormatter.dateStyle = .medium
                 let selectedDate = dateFormatter.date(from: self.tempDateText ?? "") ?? Date()
@@ -487,7 +491,9 @@
                     self.tasksByDateAndHour[dateKey]?[hour] = [title]
                 }
 
-                self.hourlyTableView.reloadData()
+                if let startTime = self.selectedStartTime {
+                    self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
+                }
             }
 
             alert.addAction(add)
@@ -496,6 +502,27 @@
             present(alert, animated: true)
         }
 
+        // MARK: - Notification helper
+        func scheduleTaskNotification(title: String, date: Date, minutesBefore: Int) {
+            let content = UNMutableNotificationContent()
+            content.title = "Upcoming Task"
+            content.body = title
+            content.sound = .default
+
+            let triggerDate = Calendar.current.date(byAdding: .minute, value: -minutesBefore, to: date) ?? date
+            let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
+
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Error scheduling notification: \(error)")
+                } else {
+                    print("Notification scheduled for \(triggerDate) (\(minutesBefore) minutes before)")
+                }
+            }
+        }
 
         func setupYearCollectionView() {
             view.addSubview(yearCollectionView)
@@ -749,3 +776,11 @@
             return indices.contains(index) ? self[index] : nil
         }
     }
+extension CalendarViewController: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+}
+
