@@ -1,4 +1,94 @@
     import UIKit
+    import UserNotifications
+
+    class TrustedPeoplePickerViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+        var trustedPeople: [TrustedPerson] = []
+        var selectedPeople: Set<TrustedPerson> = []
+
+        var onSave: (([TrustedPerson]) -> Void)?
+        var onCancel: (() -> Void)?
+
+        var preselectedPeople: Set<TrustedPerson> = []
+
+        private let tableView = UITableView()
+        private let saveButton = UIButton(type: .system)
+        private let cancelButton = UIButton(type: .system)
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.backgroundColor = .systemBackground
+            trustedPeople = loadTrustedPeople()
+            selectedPeople = preselectedPeople
+
+            tableView.dataSource = self
+            tableView.delegate = self
+            tableView.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(tableView)
+
+            saveButton.setTitle("Save", for: .normal)
+            saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+
+            cancelButton.setTitle("Cancel", for: .normal)
+            cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+
+            let stack = UIStackView(arrangedSubviews: [saveButton, cancelButton])
+            stack.axis = .horizontal
+            stack.distribution = .fillEqually
+            stack.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(stack)
+
+            NSLayoutConstraint.activate([
+                tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                tableView.bottomAnchor.constraint(equalTo: stack.topAnchor),
+
+                stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                stack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                stack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+                stack.heightAnchor.constraint(equalToConstant: 50)
+            ])
+        }
+
+        func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            trustedPeople.count
+        }
+
+        func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            let person = trustedPeople[indexPath.row]
+            let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+            cell.textLabel?.text = person.name
+            cell.detailTextLabel?.text = person.phone
+            cell.accessoryType = selectedPeople.contains(person) ? .checkmark : .none
+            return cell
+        }
+
+        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            let person = trustedPeople[indexPath.row]
+            if selectedPeople.contains(person) {
+                selectedPeople.remove(person)
+            } else {
+                selectedPeople.insert(person)
+            }
+            tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
+
+        @objc private func saveTapped() {
+            onSave?(Array(selectedPeople))
+        }
+
+        @objc private func cancelTapped() {
+            onCancel?()
+        }
+
+        private func loadTrustedPeople() -> [TrustedPerson] {
+            if let data = UserDefaults.standard.data(forKey: "trusted_people_storage_v1"),
+               let decoded = try? JSONDecoder().decode([TrustedPerson].self, from: data) {
+                return decoded
+            }
+            return []
+        }
+    }
 
     // MARK: - TimePickerViewController
     class TimePickerViewController: UIViewController {
@@ -111,6 +201,9 @@
         var tempStartLocation: String?
         var tempDestination: String?
         var tempDescription: String?
+        var tempTrustedPeople: [TrustedPerson] = []
+        var notificationMinutesBefore: Int = 10 // default 10 minutes before
+
 
         let calendarView = UICalendarView()
         let selectedDateLabel = UILabel()
@@ -178,6 +271,12 @@
 
         override func viewDidLoad() {
             super.viewDidLoad()
+            UNUserNotificationCenter.current().delegate = self
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+                if let error = error {
+                    print("Notification permission error: \(error)")
+                }
+            }
             title = "Calendar"
             view.backgroundColor = .systemBackground
 
@@ -313,6 +412,7 @@
             self.tempDateText = nil
             self.selectedStartTime = nil
             self.selectedEndTime = nil
+            self.tempTrustedPeople = []   // 👈 reset trusted people
 
             let alert = UIAlertController(title: "New Task", message: nil, preferredStyle: .alert)
 
@@ -324,10 +424,19 @@
             alert.addTextField { $0.placeholder = "Description (optional)"; $0.text = self.tempDescription ?? "" }
             alert.addTextField { $0.placeholder = "Date"; $0.tag = 100; $0.inputView = UIView(); $0.text = self.tempDateText ?? "" }
 
+            // 👇 NEW Trusted People field
+            alert.addTextField {
+                $0.placeholder = "Assign Trusted People"
+                $0.tag = 200
+                $0.inputView = UIView() // disable keyboard
+                $0.text = self.tempTrustedPeople.map { $0.name }.joined(separator: ", ")
+            }
+
             // Capture references to text fields
             let startTimeField = alert.textFields?.first(where: { $0.tag == 1 })
             let endTimeField = alert.textFields?.first(where: { $0.tag == 2 })
             let dateField = alert.textFields?.first(where: { $0.tag == 100 })
+            let trustedField = alert.textFields?.first(where: { $0.tag == 200 }) // 👈 new
 
             [startTimeField, endTimeField].forEach { textField in
                 let tap = UITapGestureRecognizer(target: self, action: #selector(self.timeFieldTapped(_:)))
@@ -341,6 +450,11 @@
                 textField?.isUserInteractionEnabled = true
             }
 
+            [trustedField].forEach { textField in
+                let tap = UITapGestureRecognizer(target: self, action: #selector(self.trustedPeopleFieldTapped(_:)))
+                textField?.addGestureRecognizer(tap)
+                textField?.isUserInteractionEnabled = true
+            }
             let add = UIAlertAction(title: "Add", style: .default) { _ in
                 let fields = alert.textFields ?? []
                 self.tempTaskTitle = fields[safe: 0]?.text
@@ -353,7 +467,7 @@
 
                 guard let title = self.tempTaskTitle, !title.isEmpty else { return }
 
-                // Parse date and time and add task (same logic as before)
+                // Parse date and time and add task
                 let dateFormatter = DateFormatter()
                 dateFormatter.dateStyle = .medium
                 let selectedDate = dateFormatter.date(from: self.tempDateText ?? "") ?? Date()
@@ -377,13 +491,37 @@
                     self.tasksByDateAndHour[dateKey]?[hour] = [title]
                 }
 
-                self.hourlyTableView.reloadData()
+                if let startTime = self.selectedStartTime {
+                    self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
+                }
             }
 
             alert.addAction(add)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
 
             present(alert, animated: true)
+        }
+
+        // MARK: - Notification helper
+        func scheduleTaskNotification(title: String, date: Date, minutesBefore: Int) {
+            let content = UNMutableNotificationContent()
+            content.title = "Upcoming Task"
+            content.body = title
+            content.sound = .default
+
+            let triggerDate = Calendar.current.date(byAdding: .minute, value: -minutesBefore, to: date) ?? date
+            let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
+
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Error scheduling notification: \(error)")
+                } else {
+                    print("Notification scheduled for \(triggerDate) (\(minutesBefore) minutes before)")
+                }
+            }
         }
 
         func setupYearCollectionView() {
@@ -468,6 +606,7 @@
                             endMinute -= 60
                             endHour += 1
                         }
+
 
                         if hourIndex == startHour && hourIndex == endHour {
                             cell.showShadedRegion(startMinute: startMinute, endMinute: endMinute)
@@ -598,6 +737,31 @@
             let navVC = UINavigationController(rootViewController: trustedVC) // adds a nav bar
             present(navVC, animated: true)
         }
+        @objc private func trustedPeopleFieldTapped(_ sender: UITapGestureRecognizer) {
+            guard let textField = sender.view as? UITextField,
+                  let alert = self.presentedViewController as? UIAlertController else { return }
+
+            let pickerVC = TrustedPeoplePickerViewController()
+            pickerVC.modalPresentationStyle = .overFullScreen
+
+            // Preload already selected
+            pickerVC.preselectedPeople = Set(self.tempTrustedPeople)
+
+            // Handle save
+            pickerVC.onSave = { selected in
+                self.tempTrustedPeople = selected
+                textField.text = selected.map { $0.name }.joined(separator: ", ")
+                pickerVC.dismiss(animated: true)
+            }
+
+            // Handle cancel
+            pickerVC.onCancel = {
+                pickerVC.dismiss(animated: true)
+            }
+
+            alert.present(pickerVC, animated: true)
+        }
+
 
 
         // MARK: - TableView Delegate
@@ -612,3 +776,11 @@
             return indices.contains(index) ? self[index] : nil
         }
     }
+extension CalendarViewController: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+}
+
