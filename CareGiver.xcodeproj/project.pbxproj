@@ -14,6 +14,7 @@
 		5CC275B82E526E95003408F7 /* MonthCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B72E526E95003408F7 /* MonthCalendarView.swift */; };
 		5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B52E526E95003408F7 /* CheckBoxButton.swift */; };
 		5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B62E526E95003408F7 /* YearMonthCell.swift */; };
+		6111DB122E6DCF7600D0DE04 /* SideMenu in Frameworks */ = {isa = PBXBuildFile; productRef = 6111DB112E6DCF7600D0DE04 /* SideMenu */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
 		A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F9 /* SceneDelegate.swift */; };
@@ -89,6 +90,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6111DB122E6DCF7600D0DE04 /* SideMenu in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,6 +228,9 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E652;
+			packageReferences = (
+				6111DB102E6DCF7600D0DE04 /* XCRemoteSwiftPackageReference "SideMenu" */,
+			);
 			productRefGroup = A1B2C3D4E654 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -259,7 +264,6 @@
 				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
-				A1B2C3D4E602 /* RegisterStep2ViewController.swift in Sources */,
 				A1B2C3D4E604 /* MainTabBarController.swift in Sources */,
 				A1B2C3D4E606 /* HomeViewController.swift in Sources */,
 				A1B2C3D4E608 /* CalendarViewController.swift in Sources */,
@@ -514,6 +518,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6111DB102E6DCF7600D0DE04 /* XCRemoteSwiftPackageReference "SideMenu" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jonkykong/SideMenu.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6111DB112E6DCF7600D0DE04 /* SideMenu */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6111DB102E6DCF7600D0DE04 /* XCRemoteSwiftPackageReference "SideMenu" */;
+			productName = SideMenu;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCVersionGroup section */
 		A1B2C3D4E629 /* CareGiver.xcdatamodeld */ = {
