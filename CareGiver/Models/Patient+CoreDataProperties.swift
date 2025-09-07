@@ -13,6 +13,8 @@ extension Patient {
     @NSManaged public var email: String?
     @NSManaged public var phoneNumber: String?
     @NSManaged public var createdAt: Date?
+    @NSManaged public var veteranStatus: Bool
+    @NSManaged public var incomeRange: String?
     @NSManaged public var caregiver: Caregiver?
 
 }

@@ -45,7 +45,7 @@ class MainTabBarController: UITabBarController {
         selectedIndex = 0
         
         // Pass current caregiver to all view controllers
-        homeVC.currentCaregiver = currentCaregiver
+//        homeVC.currentCaregiver = currentCaregiver
         calendarVC.currentCaregiver = currentCaregiver
         chatbotVC.currentCaregiver = currentCaregiver
         trackingVC.currentCaregiver = currentCaregiver
@@ -198,3 +198,6 @@ extension MainTabBarController: MenuViewControllerDelegate {
         }
     }
 }
+
+
+
