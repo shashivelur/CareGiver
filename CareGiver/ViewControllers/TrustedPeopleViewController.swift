@@ -3,7 +3,7 @@ import ContactsUI
 import Contacts
 
 // MARK: - Model
-struct TrustedPerson: Codable, Equatable {
+struct TrustedPerson: Codable, Equatable, Hashable {
     var name: String
     var phone: String
     var email: String
