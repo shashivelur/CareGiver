@@ -1,4 +1,5 @@
 import UIKit
+import SideMenu
 import CoreData
 import MapKit
 
@@ -25,15 +26,20 @@ class HomeViewController: UIViewController {
         loadPatients()
         checkPatientStatus()
         
+        
         // Listen for patient creation notifications
         NotificationCenter.default.addObserver(self, selector: #selector(patientCreated), name: NSNotification.Name("PatientCreated"), object: nil)
     }
+    
+    
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadPatients()
         checkPatientStatus()
     }
+    
+
     
     deinit {
         NotificationCenter.default.removeObserver(self)

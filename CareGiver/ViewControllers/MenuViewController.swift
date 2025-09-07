@@ -1,9 +1,6 @@
 import UIKit
+import SideMenu
 import CoreData
-
-protocol MenuViewControllerDelegate: AnyObject {
-    func menuViewController(_ menuViewController: MenuViewController, didSelectMenuItem item: MenuViewController.MenuItem)
-}
 
 class MenuViewController: UIViewController {
     
@@ -38,7 +35,6 @@ class MenuViewController: UIViewController {
         }
     }
     
-    weak var delegate: MenuViewControllerDelegate?
     var currentCaregiver: Caregiver?
     
     private let tableView = UITableView()
@@ -50,43 +46,38 @@ class MenuViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        loadCurrentCaregiver()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateHeaderInfo()
     }
     
     private func setupUI() {
         view.backgroundColor = .systemBackground
-        
-        // Setup header view
         setupHeaderView()
-        
-        // Setup table view
         setupTableView()
-        
-        // Layout
         setupConstraints()
-        
-        // Update header with caregiver info
         updateHeaderInfo()
     }
     
     private func setupHeaderView() {
         headerView.backgroundColor = .systemBlue
         
-        // Profile image - smaller size
         profileImageView.image = UIImage(systemName: "person.circle.fill")
         profileImageView.tintColor = .white
         profileImageView.contentMode = .scaleAspectFit
         
-        // Name label - smaller font
         nameLabel.textColor = .white
-        nameLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        nameLabel.text = "Caregiver Name"
+        nameLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+        nameLabel.text = "Caregiver's Name"
         nameLabel.numberOfLines = 1
         nameLabel.adjustsFontSizeToFitWidth = true
         nameLabel.minimumScaleFactor = 0.8
         
-        // Email label - smaller font
-        emailLabel.textColor = .white
-        emailLabel.font = UIFont.systemFont(ofSize: 12)
+        emailLabel.textColor = .white.withAlphaComponent(0.9)
+        emailLabel.font = UIFont.systemFont(ofSize: 14)
         emailLabel.text = "caregiver@email.com"
         emailLabel.numberOfLines = 1
         emailLabel.adjustsFontSizeToFitWidth = true
@@ -95,7 +86,6 @@ class MenuViewController: UIViewController {
         headerView.addSubview(profileImageView)
         headerView.addSubview(nameLabel)
         headerView.addSubview(emailLabel)
-        
         view.addSubview(headerView)
     }
     
@@ -105,7 +95,7 @@ class MenuViewController: UIViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "MenuCell")
         tableView.backgroundColor = .systemBackground
         tableView.separatorStyle = .singleLine
-        
+        tableView.showsVerticalScrollIndicator = false
         view.addSubview(tableView)
     }
     
@@ -117,29 +107,24 @@ class MenuViewController: UIViewController {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            // Header view - smaller height and better positioning
-            headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            headerView.heightAnchor.constraint(equalToConstant: 80),
+            headerView.heightAnchor.constraint(equalToConstant: 120),
             
-            // Profile image - smaller size
             profileImageView.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
-            profileImageView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 15),
-            profileImageView.widthAnchor.constraint(equalToConstant: 45),
-            profileImageView.heightAnchor.constraint(equalToConstant: 45),
+            profileImageView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            profileImageView.widthAnchor.constraint(equalToConstant: 60),
+            profileImageView.heightAnchor.constraint(equalToConstant: 60),
             
-            // Name label - better positioning
-            nameLabel.topAnchor.constraint(equalTo: profileImageView.topAnchor, constant: 2),
-            nameLabel.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 12),
-            nameLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -15),
+            nameLabel.topAnchor.constraint(equalTo: profileImageView.topAnchor, constant: 8),
+            nameLabel.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 15),
+            nameLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
             
-            // Email label - closer to name
-            emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 3),
+            emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 5),
             emailLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
             emailLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
             
-            // Table view
             tableView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -148,10 +133,56 @@ class MenuViewController: UIViewController {
     }
     
     private func updateHeaderInfo() {
-        guard let caregiver = currentCaregiver else { return }
+        guard let caregiver = currentCaregiver else {
+            nameLabel.text = "Caregiver"
+            emailLabel.text = "No email"
+            return
+        }
         
-        nameLabel.text = caregiver.fullName
+        let firstName = caregiver.firstName ?? ""
+        let lastName = caregiver.lastName ?? ""
+        nameLabel.text = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
         emailLabel.text = caregiver.email ?? "No email"
+    }
+    
+    private func loadCurrentCaregiver() {
+        if currentCaregiver != nil { return }
+        
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let context = appDelegate.persistentContainer.viewContext
+        
+        let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+        request.fetchLimit = 1
+        
+        do {
+            let caregivers = try context.fetch(request)
+            currentCaregiver = caregivers.first
+            updateHeaderInfo()
+        } catch {
+            print("Error loading caregiver: \(error)")
+        }
+    }
+    
+    // This function MUST be inside the class
+    private func navigateToViewController(for menuItem: MenuItem) {
+        print("Attempting to navigate to: \(menuItem.title)")
+        
+        // Post notification and dismiss
+        NotificationCenter.default.post(name: NSNotification.Name("MenuItemSelected"), object: menuItem)
+        print("Notification posted")
+        
+        // Try to dismiss the side menu
+        if let sideMenuController = self.navigationController as? SideMenuNavigationController {
+            print("Dismissing side menu")
+            sideMenuController.dismiss(animated: true) {
+                print("Side menu dismissed")
+            }
+        } else {
+            print("Not a side menu controller, using regular dismiss")
+            dismiss(animated: true) {
+                print("Regular dismiss completed")
+            }
+        }
     }
 }
 
@@ -166,9 +197,11 @@ extension MenuViewController: UITableViewDataSource {
         let menuItem = MenuItem.allCases[indexPath.row]
         
         cell.textLabel?.text = menuItem.title
+        cell.textLabel?.font = UIFont.systemFont(ofSize: 16)
         cell.imageView?.image = UIImage(systemName: menuItem.icon)
         cell.imageView?.tintColor = .systemBlue
         cell.accessoryType = .disclosureIndicator
+        cell.backgroundColor = .systemBackground
         
         return cell
     }
@@ -180,10 +213,11 @@ extension MenuViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         
         let menuItem = MenuItem.allCases[indexPath.row]
-        delegate?.menuViewController(self, didSelectMenuItem: menuItem)
+        print("Menu item selected: \(menuItem.title)")
+        navigateToViewController(for: menuItem)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 55
+        return 60
     }
 }

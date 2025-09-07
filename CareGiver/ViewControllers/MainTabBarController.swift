@@ -1,18 +1,66 @@
 import UIKit
 import CoreData
+import SideMenu
 
 class MainTabBarController: UITabBarController {
     
     var currentCaregiver: Caregiver?
-    var menuViewController: MenuViewController?
-    var isMenuOpen = false
-    var tapGestureRecognizer: UITapGestureRecognizer?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTabBar()
-        setupHamburgerMenu()
+        setupSideMenu()
+        
+        // Listen for menu navigation
+                NotificationCenter.default.addObserver(
+                    self,
+                    selector: #selector(handleMenuNavigation(_:)),
+                    name: NSNotification.Name("MenuItemSelected"),
+                    object: nil
+                )
+                print("Tab bar controller loaded and listening for notifications")
     }
+    
+    deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+        
+        @objc private func handleMenuNavigation(_ notification: Notification) {
+            print("Received menu navigation notification")
+            
+            guard let menuItem = notification.object as? MenuViewController.MenuItem else {
+                print("Failed to get menu item from notification")
+                return
+            }
+            
+            print("Navigating to: \(menuItem.title)")
+            
+            guard let selectedNavController = selectedViewController as? UINavigationController else {
+                print("Failed to get navigation controller")
+                return
+            }
+            
+            let targetViewController: UIViewController
+            
+            switch menuItem {
+            case .profile:
+                targetViewController = ProfileViewController()
+            case .settings:
+                targetViewController = SettingsViewController()
+            case .notifications:
+                targetViewController = NotificationsViewController()
+            case .reports:
+                targetViewController = ReportsViewController()
+            case .financialAssistance:
+                targetViewController = GovernmentAidInfoViewController()
+            case .help:
+                targetViewController = HelpViewController()
+            }
+            
+            targetViewController.title = menuItem.title
+            print("Pushing view controller: \(targetViewController)")
+            selectedNavController.pushViewController(targetViewController, animated: true)
+        }
     
     private func setupTabBar() {
         // Create tab bar items
@@ -45,159 +93,62 @@ class MainTabBarController: UITabBarController {
         selectedIndex = 0
         
         // Pass current caregiver to all view controllers
-//        homeVC.currentCaregiver = currentCaregiver
         calendarVC.currentCaregiver = currentCaregiver
         chatbotVC.currentCaregiver = currentCaregiver
         trackingVC.currentCaregiver = currentCaregiver
         
+        // Add hamburger menu to all navigation controllers
+        addHamburgerMenuToAllTabs()
     }
     
-    private func setupHamburgerMenu() {
-        // Add hamburger menu button to all navigation controllers
-        for case let navController as UINavigationController in viewControllers ?? [] {
-            if let viewController = navController.topViewController {
-                let menuButton = UIBarButtonItem(
+    private func setupSideMenu() {
+        // Create the menu view controller
+        let menuViewController = MenuViewController()
+        menuViewController.currentCaregiver = currentCaregiver
+        
+        // Create side menu navigation controller
+        let menuNavController = SideMenuNavigationController(rootViewController: menuViewController)
+        
+        // Configure the side menu
+        menuNavController.leftSide = true
+        menuNavController.menuWidth = min(view.frame.width, view.frame.height) * 0.8
+        menuNavController.presentationStyle = .menuSlideIn
+        menuNavController.presentationStyle.backgroundColor = .black
+        menuNavController.presentationStyle.presentingEndAlpha = 0.3
+        
+        // Set as the left menu
+        SideMenuManager.default.leftMenuNavigationController = menuNavController
+        
+        // Enable gestures
+        SideMenuManager.default.addPanGestureToPresent(toView: view)
+        SideMenuManager.default.addScreenEdgePanGesturesToPresent(toView: view)
+    }
+    
+    private func addHamburgerMenuToAllTabs() {
+        guard let navControllers = viewControllers as? [UINavigationController] else { return }
+        
+        for navController in navControllers {
+            if let rootVC = navController.viewControllers.first {
+                let hamburgerButton = UIBarButtonItem(
                     image: UIImage(systemName: "line.horizontal.3"),
                     style: .plain,
                     target: self,
-                    action: #selector(toggleMenu)
+                    action: #selector(hamburgerMenuTapped)
                 )
-                viewController.navigationItem.leftBarButtonItem = menuButton
+                rootVC.navigationItem.leftBarButtonItem = hamburgerButton
             }
         }
-        
-        // Create menu view controller
-        menuViewController = MenuViewController()
-        menuViewController?.delegate = self
-        menuViewController?.currentCaregiver = currentCaregiver
     }
     
-    @objc private func toggleMenu() {
-        guard let menuVC = menuViewController else { return }
-        
-        if !isMenuOpen {
-            // Add menu view controller
-            addChild(menuVC)
-            view.addSubview(menuVC.view)
-            menuVC.didMove(toParent: self)
-            
-            // Get safe area insets to avoid system UI
-            let safeAreaTop = view.safeAreaInsets.top
-            let menuHeight = view.frame.height - safeAreaTop
-            
-            // Set initial position (off-screen) with safe area consideration
-            menuVC.view.frame = CGRect(x: -250, y: safeAreaTop, width: 250, height: menuHeight)
-            
-            // Add tap gesture to dismiss menu when tapping outside
-            setupTapGestureToDismissMenu()
-            
-            // Animate menu in
-            UIView.animate(withDuration: 0.3) {
-                menuVC.view.frame = CGRect(x: 0, y: safeAreaTop, width: 250, height: menuHeight)
-                self.view.frame.origin.x = 250
+    @objc private func hamburgerMenuTapped() {
+        print("Hamburger menu tapped")
+        if let sideMenuController = SideMenuManager.default.leftMenuNavigationController {
+            print("Presenting side menu")
+            present(sideMenuController, animated: true) {
+                print("Side menu presented")
             }
-            
-            isMenuOpen = true
         } else {
-            closeMenu()
-        }
-    }
-    
-    private func closeMenu() {
-        guard let menuVC = menuViewController, isMenuOpen else { return }
-        
-        // Remove tap gesture recognizer
-        removeTapGestureToDismissMenu()
-        
-        // Get safe area insets for consistent positioning
-        let safeAreaTop = view.safeAreaInsets.top
-        let menuHeight = view.frame.height - safeAreaTop
-        
-        UIView.animate(withDuration: 0.3, animations: {
-            menuVC.view.frame = CGRect(x: -250, y: safeAreaTop, width: 250, height: menuHeight)
-            self.view.frame.origin.x = 0
-        }) { _ in
-            menuVC.willMove(toParent: nil)
-            menuVC.view.removeFromSuperview()
-            menuVC.removeFromParent()
-            self.isMenuOpen = false
-        }
-    }
-    
-    // MARK: - Tap Gesture Handling
-    private func setupTapGestureToDismissMenu() {
-        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTapOutsideMenu(_:)))
-        tapGestureRecognizer?.delegate = self
-        view.addGestureRecognizer(tapGestureRecognizer!)
-    }
-    
-    private func removeTapGestureToDismissMenu() {
-        if let tapGesture = tapGestureRecognizer {
-            view.removeGestureRecognizer(tapGesture)
-            tapGestureRecognizer = nil
-        }
-    }
-    
-    @objc private func handleTapOutsideMenu(_ gesture: UITapGestureRecognizer) {
-        // The gesture delegate already ensures this is outside the menu area
-        if isMenuOpen {
-            closeMenu()
+            print("No side menu controller found")
         }
     }
 }
-
-// MARK: - UIGestureRecognizerDelegate
-extension MainTabBarController: UIGestureRecognizerDelegate {
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        // Only handle tap gestures when menu is open
-        guard isMenuOpen else { return false }
-        
-        // Get the touch location in the main view
-        let touchLocation = touch.location(in: view)
-        
-        // Don't handle touches that are within the menu area (0 to 250 points from left)
-        if touchLocation.x <= 250 {
-            return false
-        }
-        
-        return true
-    }
-}
-
-// MARK: - MenuViewControllerDelegate
-extension MainTabBarController: MenuViewControllerDelegate {
-    func menuViewController(_ menuViewController: MenuViewController, didSelectMenuItem item: MenuViewController.MenuItem) {
-        closeMenu()
-        
-        // Navigate to the selected menu item
-        var targetViewController: UIViewController?
-        
-        switch item {
-        case .profile:
-            let profileVC = ProfileViewController()
-            profileVC.currentCaregiver = currentCaregiver
-            targetViewController = profileVC
-        case .settings:
-            targetViewController = SettingsViewController()
-        case .notifications:
-            targetViewController = NotificationsViewController()
-        case .reports:
-            targetViewController = ReportsViewController()
-        case .financialAssistance:
-            let financialVC = FinancialAssistanceViewController()
-            financialVC.currentCaregiver = currentCaregiver
-            targetViewController = financialVC
-        case .help:
-            targetViewController = HelpViewController()
-        }
-        
-        if let targetVC = targetViewController {
-            if let navController = selectedViewController as? UINavigationController {
-                navController.pushViewController(targetVC, animated: true)
-            }
-        }
-    }
-}
-
-
-
