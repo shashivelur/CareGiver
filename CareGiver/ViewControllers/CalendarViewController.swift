@@ -316,9 +316,9 @@
             view.addSubview(calendarView)
             NSLayoutConstraint.activate([
                 calendarView.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
-                calendarView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                calendarView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                calendarView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+                calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+                calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
             ])
         }
 
@@ -348,8 +348,8 @@
 
             NSLayoutConstraint.activate([
                 dayNavigationStack.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
-                dayNavigationStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-                dayNavigationStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+                dayNavigationStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+                dayNavigationStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20)
             ])
         }
 
@@ -377,8 +377,8 @@
 
             NSLayoutConstraint.activate([
                 hourlyTableView.topAnchor.constraint(equalTo: selectedDateLabel.bottomAnchor, constant: 5),
-                hourlyTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                hourlyTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                hourlyTableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+                hourlyTableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
                 hourlyTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -60)
             ])
         }
@@ -394,8 +394,8 @@
             view.addSubview(addTaskButton)
 
             NSLayoutConstraint.activate([
-                addTaskButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-                addTaskButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+                addTaskButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+                addTaskButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
                 addTaskButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
                 addTaskButton.heightAnchor.constraint(equalToConstant: 50)
             ])
@@ -494,6 +494,9 @@
                 if let startTime = self.selectedStartTime {
                     self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
                 }
+                
+                // Reload table view to show the new task
+                self.hourlyTableView.reloadData()
             }
 
             alert.addAction(add)
@@ -528,9 +531,9 @@
             view.addSubview(yearCollectionView)
             NSLayoutConstraint.activate([
                 yearCollectionView.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
-                yearCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-                yearCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-                yearCollectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                yearCollectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10),
+                yearCollectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -10),
+                yearCollectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10)
             ])
         }
 
