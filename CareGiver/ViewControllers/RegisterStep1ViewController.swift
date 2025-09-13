@@ -36,7 +36,8 @@ class RegisterStep1ViewController: UIViewController {
              let context = appDelegate.persistentContainer.viewContext
              
              do {
-                 try createCaregiver(username: enteredUsername, password: enteredPassword)
+                 try createCaregiver()
+                 
              } catch {
                  print("There was an error saving the password. Please try again.")
              }
@@ -89,16 +90,40 @@ class RegisterStep1ViewController: UIViewController {
         return hexString
     }
     
-    func createCaregiver(username: String, password: String) throws {
+    func createCaregiver() throws {
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         let context = appDelegate.persistentContainer.viewContext
 
-        // If you generated NSManagedObject subclasses, you can use Caregiver directly:
         let caregiver = Caregiver(context: context)
-        caregiver.username = username
-        caregiver.password = password  // for production: store in Keychain instead
+        
+        // Save all the fields with proper field names
+        caregiver.username = usernameTextField.text
+        caregiver.password = sha256(for: passwordTextField.text ?? "") // Hash the password
+        caregiver.email = emailTextField.text
+        caregiver.firstName = firstNameTextField.text
+        caregiver.lastName = lastNameTextField.text  // This was at the end - move it up
+        caregiver.phoneNumber = phoneNumberTextField.text
+        
+        // Check if your Core Data model uses 'birthday' or 'dateOfBirth'
+        // In ProfileViewController you're looking for 'birthday', so use that:
+        caregiver.dateOfBirth = birthdayDatePicker.date
+        // OR if your model actually uses 'dateOfBirth', then update ProfileViewController
+        
+        // Add debug print to see what's being saved
+        print("=== Saving Caregiver ===")
+        print("Username: \(caregiver.username ?? "nil")")
+        print("FirstName: \(caregiver.firstName ?? "nil")")
+        print("LastName: \(caregiver.lastName ?? "nil")")
+        print("Email: \(caregiver.email ?? "nil")")
+        print("Phone: \(caregiver.phoneNumber ?? "nil")")
+        print("Birthday: \(caregiver.dateOfBirth?.description ?? "nil")")
+        print("========================")
 
         try context.save()
+        UserDefaults.standard.set(caregiver.username, forKey: "LoggedInUsername")
+        UserDefaults.standard.synchronize()
+        
+        print("Caregiver saved successfully!")
     }
     
     
