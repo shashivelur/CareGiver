@@ -15,6 +15,8 @@
 		5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B52E526E95003408F7 /* CheckBoxButton.swift */; };
 		5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC275B62E526E95003408F7 /* YearMonthCell.swift */; };
 		6111DB122E6DCF7600D0DE04 /* SideMenu in Frameworks */ = {isa = PBXBuildFile; productRef = 6111DB112E6DCF7600D0DE04 /* SideMenu */; };
+		6111DB152E765B3B00D0DE04 /* Patient+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */; };
+		6111DB162E765B3B00D0DE04 /* Patient+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
 		A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F9 /* SceneDelegate.swift */; };
@@ -35,8 +37,6 @@
 		A1B2C3D4E631 /* CoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E632 /* CoreDataManager.swift */; };
 		A1B2C3D4E633 /* Caregiver+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E634 /* Caregiver+CoreDataClass.swift */; };
 		A1B2C3D4E635 /* Caregiver+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E636 /* Caregiver+CoreDataProperties.swift */; };
-		A1B2C3D4E637 /* Patient+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E638 /* Patient+CoreDataClass.swift */; };
-		A1B2C3D4E639 /* Patient+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E640 /* Patient+CoreDataProperties.swift */; };
 		A1B2C3D4E641 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E642 /* Main.storyboard */; };
 		A1B2C3D4E644 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E645 /* Assets.xcassets */; };
 		A1B2C3D4E646 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E647 /* LaunchScreen.storyboard */; };
@@ -53,6 +53,8 @@
 		5CC275B52E526E95003408F7 /* CheckBoxButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckBoxButton.swift; sourceTree = "<group>"; };
 		5CC275B62E526E95003408F7 /* YearMonthCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearMonthCell.swift; sourceTree = "<group>"; };
 		5CC275B72E526E95003408F7 /* MonthCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarView.swift; sourceTree = "<group>"; };
+		6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataClass.swift"; sourceTree = "<group>"; };
+		6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -73,8 +75,6 @@
 		A1B2C3D4E632 /* CoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataManager.swift; sourceTree = "<group>"; };
 		A1B2C3D4E634 /* Caregiver+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Caregiver+CoreDataClass.swift"; sourceTree = "<group>"; };
 		A1B2C3D4E636 /* Caregiver+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Caregiver+CoreDataProperties.swift"; sourceTree = "<group>"; };
-		A1B2C3D4E638 /* Patient+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataClass.swift"; sourceTree = "<group>"; };
-		A1B2C3D4E640 /* Patient+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		A1B2C3D4E643 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		A1B2C3D4E645 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E648 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -164,8 +164,8 @@
 				A1B2C3D4E632 /* CoreDataManager.swift */,
 				A1B2C3D4E634 /* Caregiver+CoreDataClass.swift */,
 				A1B2C3D4E636 /* Caregiver+CoreDataProperties.swift */,
-				A1B2C3D4E638 /* Patient+CoreDataClass.swift */,
-				A1B2C3D4E640 /* Patient+CoreDataProperties.swift */,
+				6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */,
+				6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -258,6 +258,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6111DB152E765B3B00D0DE04 /* Patient+CoreDataClass.swift in Sources */,
+				6111DB162E765B3B00D0DE04 /* Patient+CoreDataProperties.swift in Sources */,
 				E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */,
 				5CC275B82E526E95003408F7 /* MonthCalendarView.swift in Sources */,
 				5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */,
@@ -285,9 +287,7 @@
 				A1B2C3D4E631 /* CoreDataManager.swift in Sources */,
 				A1B2C3D4E633 /* Caregiver+CoreDataClass.swift in Sources */,
 				A1B2C3D4E635 /* Caregiver+CoreDataProperties.swift in Sources */,
-				A1B2C3D4E637 /* Patient+CoreDataClass.swift in Sources */,
 				E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */,
-				A1B2C3D4E639 /* Patient+CoreDataProperties.swift in Sources */,
 				A1B2C3D4E5F6 /* AppDelegate.swift in Sources */,
 				A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */,
 			);
