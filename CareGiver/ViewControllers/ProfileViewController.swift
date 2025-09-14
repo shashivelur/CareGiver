@@ -107,11 +107,18 @@ class ProfileViewController: UIViewController {
     }
     
     private func setupProfileImage() {
+        // Create the profile image view
         profileImageView = UIImageView()
-        profileImageView.image = UIImage(systemName: "person.crop.circle.fill")
-        profileImageView.tintColor = .systemGray3
-        profileImageView.contentMode = .scaleAspectFit
-        profileImageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Configure the image view
+        profileImageView.image = UIImage(named: "ProfilePhoto") // Replace with your image name
+        profileImageView.tintColor = nil // Remove tint for custom images
+        profileImageView.contentMode = .scaleAspectFill // Better for photos
+        profileImageView.layer.cornerRadius = 60 // Make it circular (half of 120)
+        profileImageView.clipsToBounds = true // Clip to circular shape
+        profileImageView.translatesAutoresizingMaskIntoConstraints = false // Required for Auto Layout
+        
+        // Add to the view hierarchy
         contentView.addSubview(profileImageView)
     }
     

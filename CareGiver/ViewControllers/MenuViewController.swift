@@ -65,9 +65,12 @@ class MenuViewController: UIViewController {
     private func setupHeaderView() {
         headerView.backgroundColor = .systemBlue
         
-        profileImageView.image = UIImage(systemName: "person.circle.fill")
-        profileImageView.tintColor = .white
-        profileImageView.contentMode = .scaleAspectFit
+        // Change this line to use a custom image
+        profileImageView.image = UIImage(named: "ProfilePhoto") // Replace with your image name
+        profileImageView.tintColor = nil // Remove tint for custom images
+        profileImageView.contentMode = .scaleAspectFill // Better for photos
+        profileImageView.layer.cornerRadius = 30 // Make it circular (half of width/height)
+        profileImageView.clipsToBounds = true // Clip to circular shape
         
         nameLabel.textColor = .white
         nameLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
