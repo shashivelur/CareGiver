@@ -60,31 +60,34 @@ class GovernmentAidInfoViewController: UIViewController {
 
     // MARK: - Box Tap Handlers
     @objc private func vaBoxTapped() {
-        let vc = AidDetailViewController(titleText: "VA page")
+        let vc = GovernmentAidWebViewController(urlString: "https://www.va.gov/caregiver-support/", pageTitle: "VA Benefits Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     @objc private func medicareBoxTapped() {
-        let vc = AidDetailViewController(titleText: "Medicare page")
+        let vc = GovernmentAidWebViewController(urlString: "https://www.medicare.gov/basics/get-started-with-medicare", pageTitle: "Medicare Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     @objc private func medicaidBoxTapped() {
-        let vc = AidDetailViewController(titleText: "Medicaid page")
+        let vc = GovernmentAidWebViewController(urlString: "https://www.medicaid.gov/medicaid/how-to-apply/index.html", pageTitle: "Medicaid Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     @objc private func ssdiBoxTapped() {
-        let vc = AidDetailViewController(titleText: "SSDI page")
+        let vc = GovernmentAidWebViewController(urlString: "https://www.ssa.gov/benefits/disability/", pageTitle: "SSDI Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     
     private func createInfoBox(title: String, description: String) -> UIView {
-        let box = UIView()
-        box.backgroundColor = UIColor.secondarySystemBackground
-        box.layer.cornerRadius = 12
-        box.layer.shadowColor = UIColor.black.cgColor
-        box.layer.shadowOpacity = 0.08
-        box.layer.shadowOffset = CGSize(width: 0, height: 2)
-        box.layer.shadowRadius = 4
-        box.translatesAutoresizingMaskIntoConstraints = false
+    let box = UIView()
+    box.backgroundColor = UIColor.secondarySystemBackground
+    box.layer.cornerRadius = 12
+    box.layer.shadowColor = UIColor.black.cgColor
+    box.layer.shadowOpacity = 0.08
+    box.layer.shadowOffset = CGSize(width: 0, height: 2)
+    box.layer.shadowRadius = 4
+    box.translatesAutoresizingMaskIntoConstraints = false
+    // Add green border to indicate eligibility
+    box.layer.borderColor = UIColor.systemGreen.cgColor
+    box.layer.borderWidth = 3
         
         let titleLabel = UILabel()
         titleLabel.text = title
