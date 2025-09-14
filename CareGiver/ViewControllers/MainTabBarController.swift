@@ -10,57 +10,60 @@ class MainTabBarController: UITabBarController {
         super.viewDidLoad()
         setupTabBar()
         setupSideMenu()
-        
+
         // Listen for menu navigation
-                NotificationCenter.default.addObserver(
-                    self,
-                    selector: #selector(handleMenuNavigation(_:)),
-                    name: NSNotification.Name("MenuItemSelected"),
-                    object: nil
-                )
-                print("Tab bar controller loaded and listening for notifications")
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleMenuNavigation(_:)),
+            name: NSNotification.Name("MenuItemSelected"),
+            object: nil
+        )
+        print("Tab bar controller loaded and listening for notifications")
+        
+        // Set delegate to handle tab switching
+        delegate = self
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
-    deinit {
-            NotificationCenter.default.removeObserver(self)
+    @objc private func handleMenuNavigation(_ notification: Notification) {
+        print("Received menu navigation notification")
+        
+        guard let menuItem = notification.object as? MenuViewController.MenuItem else {
+            print("Failed to get menu item from notification")
+            return
         }
         
-        @objc private func handleMenuNavigation(_ notification: Notification) {
-            print("Received menu navigation notification")
-            
-            guard let menuItem = notification.object as? MenuViewController.MenuItem else {
-                print("Failed to get menu item from notification")
-                return
-            }
-            
-            print("Navigating to: \(menuItem.title)")
-            
-            guard let selectedNavController = selectedViewController as? UINavigationController else {
-                print("Failed to get navigation controller")
-                return
-            }
-            
-            let targetViewController: UIViewController
-            
-            switch menuItem {
-            case .profile:
-                targetViewController = ProfileViewController()
-            case .settings:
-                targetViewController = SettingsViewController()
-            case .notifications:
-                targetViewController = NotificationsViewController()
-            case .reports:
-                targetViewController = ReportsViewController()
-            case .financialAssistance:
-                targetViewController = GovernmentAidInfoViewController()
-            case .help:
-                targetViewController = HelpViewController()
-            }
-            
-            targetViewController.title = menuItem.title
-            print("Pushing view controller: \(targetViewController)")
-            selectedNavController.pushViewController(targetViewController, animated: true)
+        print("Navigating to: \(menuItem.title)")
+        
+        guard let selectedNavController = selectedViewController as? UINavigationController else {
+            print("Failed to get navigation controller")
+            return
         }
+        
+        let targetViewController: UIViewController
+        
+        switch menuItem {
+        case .profile:
+            targetViewController = ProfileViewController()
+        case .settings:
+            targetViewController = SettingsViewController()
+        case .notifications:
+            targetViewController = NotificationsViewController()
+        case .reports:
+            targetViewController = ReportsViewController()
+        case .financialAssistance:
+            targetViewController = GovernmentAidInfoViewController()
+        case .help:
+            targetViewController = HelpViewController()
+        }
+        
+        targetViewController.title = menuItem.title
+        print("Pushing view controller: \(targetViewController)")
+        selectedNavController.pushViewController(targetViewController, animated: true)
+    }
     
     private func setupTabBar() {
         // Create tab bar items
@@ -141,14 +144,18 @@ class MainTabBarController: UITabBarController {
     }
     
     @objc private func hamburgerMenuTapped() {
-        print("Hamburger menu tapped")
         if let sideMenuController = SideMenuManager.default.leftMenuNavigationController {
-            print("Presenting side menu")
-            present(sideMenuController, animated: true) {
-                print("Side menu presented")
-            }
-        } else {
-            print("No side menu controller found")
+            present(sideMenuController, animated: true)
+        }
+    }
+}
+
+// MARK: - UITabBarControllerDelegate
+extension MainTabBarController: UITabBarControllerDelegate {
+    func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        // Pop to root view controller when switching tabs
+        if let navController = viewController as? UINavigationController {
+            navController.popToRootViewController(animated: false)
         }
     }
 }
