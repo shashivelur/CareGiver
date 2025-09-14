@@ -90,54 +90,117 @@
         }
     }
 
-    // MARK: - TimePickerViewController
-    class TimePickerViewController: UIViewController {
-        var onTimeSelected: ((Date) -> Void)?
-        var onCancel: (() -> Void)?   // 👈 closure for cancel
-
-        private let picker = UIDatePicker()
-        private let saveButton = UIButton(type: .system)
-        private let cancelButton = UIButton(type: .system)
-
-        override func viewDidLoad() {
-            super.viewDidLoad()
-            view.backgroundColor = .systemBackground
-
-            picker.datePickerMode = .time
-            picker.preferredDatePickerStyle = .wheels
-            picker.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(picker)
-
-            saveButton.setTitle("Save", for: .normal)
-            saveButton.translatesAutoresizingMaskIntoConstraints = false
-            saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-            view.addSubview(saveButton)
-
-            cancelButton.setTitle("Cancel", for: .normal)
-            cancelButton.translatesAutoresizingMaskIntoConstraints = false
-            cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
-            view.addSubview(cancelButton)
-
-            NSLayoutConstraint.activate([
-                picker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                picker.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-                saveButton.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 16),
-                saveButton.leadingAnchor.constraint(equalTo: view.centerXAnchor, constant: 8),
-                cancelButton.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 16),
-                cancelButton.trailingAnchor.constraint(equalTo: view.centerXAnchor, constant: -8)
-            ])
-        }
-
-        @objc private func saveTapped() {
-            onTimeSelected?(picker.date)
-            dismiss(animated: true, completion: nil)
-        }
-
-        @objc private func cancelTapped() {
-            onCancel?() // 👈 return to Add Task popup with existing inputs intact
-            dismiss(animated: true, completion: nil)
+// MARK: - TimePickerViewController
+class TimePickerViewController: UIViewController {
+    
+    var taskDescription: String = ""
+    var selectedDate: Date = Date()
+    
+    // ✅ Fix: Define the closure property with proper type annotation
+    var onTimeSelected: ((Date, Date) -> Void)?
+    
+    private let startTimePicker = UIDatePicker()
+    private let endTimePicker = UIDatePicker()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+    }
+    
+    private func setupUI() {
+        title = "Select Time"
+        view.backgroundColor = .systemBackground
+        
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .cancel,
+            target: self,
+            action: #selector(cancelTapped)
+        )
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .done,
+            target: self,
+            action: #selector(doneTapped)
+        )
+        
+        // Configure date pickers
+        startTimePicker.datePickerMode = .time
+        startTimePicker.preferredDatePickerStyle = .wheels
+        startTimePicker.translatesAutoresizingMaskIntoConstraints = false
+        
+        endTimePicker.datePickerMode = .time
+        endTimePicker.preferredDatePickerStyle = .wheels
+        endTimePicker.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Labels
+        let startLabel = UILabel()
+        startLabel.text = "Start Time"
+        startLabel.font = UIFont.boldSystemFont(ofSize: 18)
+        startLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let endLabel = UILabel()
+        endLabel.text = "End Time"
+        endLabel.font = UIFont.boldSystemFont(ofSize: 18)
+        endLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let taskLabel = UILabel()
+        taskLabel.text = "Task: \(taskDescription)"
+        taskLabel.font = UIFont.systemFont(ofSize: 16)
+        taskLabel.textColor = .secondaryLabel
+        taskLabel.numberOfLines = 0
+        taskLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(taskLabel)
+        view.addSubview(startLabel)
+        view.addSubview(startTimePicker)
+        view.addSubview(endLabel)
+        view.addSubview(endTimePicker)
+        
+        NSLayoutConstraint.activate([
+            taskLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            taskLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            taskLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            
+            startLabel.topAnchor.constraint(equalTo: taskLabel.bottomAnchor, constant: 30),
+            startLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            
+            startTimePicker.topAnchor.constraint(equalTo: startLabel.bottomAnchor, constant: 10),
+            startTimePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            endLabel.topAnchor.constraint(equalTo: startTimePicker.bottomAnchor, constant: 30),
+            endLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            
+            endTimePicker.topAnchor.constraint(equalTo: endLabel.bottomAnchor, constant: 10),
+            endTimePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        ])
+        
+        // Set default end time to 1 hour after start time
+        if let oneHourLater = Calendar.current.date(byAdding: .hour, value: 1, to: startTimePicker.date) {
+            endTimePicker.date = oneHourLater
         }
     }
+    
+    @objc private func cancelTapped() {
+        dismiss(animated: true)
+    }
+    
+    @objc private func doneTapped() {
+        let startTime = startTimePicker.date
+        let endTime = endTimePicker.date
+        
+        // Validate that end time is after start time
+        if endTime <= startTime {
+            let alert = UIAlertController(title: "Invalid Time", message: "End time must be after start time", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
+        // ✅ Call the closure with the selected times
+        onTimeSelected?(startTime, endTime)
+        dismiss(animated: true)
+    }
+}
 
     // MARK: - DatePickerViewController
     class DatePickerViewController: UIViewController {
@@ -208,8 +271,8 @@
         let calendarView = UICalendarView()
         let selectedDateLabel = UILabel()
         let viewModeControl = UISegmentedControl(items: ["Day", "Month", "Year"])
-        let hourlyTableView = UITableView()
-        let addTaskButton = UIButton(type: .system)
+        var hourlyTableView = UITableView()
+        var addTaskButton = UIButton(type: .system)
         var currentSelectedDate = Date()
         var tempDateText: String?
         private var dayNavigationStack: UIStackView!
@@ -288,7 +351,9 @@
             setupYearCollectionView()
             viewModeChanged()
         }
+        
 
+        
         func setupSegmentedControl() {
             viewModeControl.selectedSegmentIndex = 0
             viewModeControl.addTarget(self, action: #selector(viewModeChanged), for: .valueChanged)
@@ -311,22 +376,97 @@
         }
 
         func setupCalendarView() {
-            calendarView.translatesAutoresizingMaskIntoConstraints = false
-            calendarView.isHidden = true
-            view.addSubview(calendarView)
-            NSLayoutConstraint.activate([
-                calendarView.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
-                calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-                calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-                calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
-            ])
-        }
+                calendarView.translatesAutoresizingMaskIntoConstraints = false
+                calendarView.isHidden = true
+                
+                // ✅ Add delegate to handle date selection
+                calendarView.delegate = self
+                
+                // ✅ Configure calendar to allow date selection
+                let selection = UICalendarSelectionSingleDate(delegate: self)
+                calendarView.selectionBehavior = selection
+                
+                view.addSubview(calendarView)
+                NSLayoutConstraint.activate([
+                    calendarView.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
+                    calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+                    calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+                    calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+                ])
+            }
 
+        @objc func addTaskTapped() {
+            let alert = UIAlertController(title: "Add Task", message: "Enter task details", preferredStyle: .alert)
+            
+            alert.addTextField { textField in
+                textField.placeholder = "Task description"
+            }
+            
+            let addAction = UIAlertAction(title: "Add", style: .default) { _ in
+                guard let taskText = alert.textFields?[0].text, !taskText.isEmpty else {
+                    return
+                }
+                
+                // Show time picker for the task
+                self.showTaskTimePicker(taskDescription: taskText)
+            }
+            
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+            
+            alert.addAction(addAction)
+            alert.addAction(cancelAction)
+            
+            present(alert, animated: true)
+        }
+        
+        private func showTaskTimePicker(taskDescription: String) {
+            let timePickerVC = TimePickerViewController()
+            timePickerVC.taskDescription = taskDescription
+            timePickerVC.selectedDate = currentSelectedDate
+            
+            // ✅ Fix: Use the correct property name
+            timePickerVC.onTimeSelected = { [weak self] startTime, endTime in
+                self?.addTask(description: taskDescription, startTime: startTime, endTime: endTime, date: self?.currentSelectedDate ?? Date())
+            }
+            
+            let navController = UINavigationController(rootViewController: timePickerVC)
+            present(navController, animated: true)
+        }
+        
+        private func addTask(description: String, startTime: Date, endTime: Date, date: Date) {
+            let dateKey = stringFromDate(date)
+            let calendar = Calendar.current
+            let hour = calendar.component(.hour, from: startTime)
+            
+            // Initialize the dictionary structure if needed
+            if tasksByDateAndHour[dateKey] == nil {
+                tasksByDateAndHour[dateKey] = [:]
+            }
+            
+            if tasksByDateAndHour[dateKey]?[hour] == nil {
+                tasksByDateAndHour[dateKey]?[hour] = []
+            }
+            
+            // Add the task
+            tasksByDateAndHour[dateKey]?[hour]?.append(description)
+            
+            // Store the time selection for highlighting
+            selectedStartTime = startTime
+            selectedEndTime = endTime
+            tempDateText = stringFromDate(date)
+            
+            // Reload the table view to show the new task
+            hourlyTableView.reloadData()
+            
+            print("Added task: \(description) at \(hour):00 on \(dateKey)")
+        }
+        
+        
         func setupSelectedDateLabel() {
             selectedDateLabel.translatesAutoresizingMaskIntoConstraints = false
             selectedDateLabel.textAlignment = .center
             selectedDateLabel.textColor = .darkGray
-            selectedDateLabel.text = "Today is: \(formattedDate(Date()))"
+            selectedDateLabel.text = formattedDate(Date()) // ✅ Remove "Today is:" from initial setup
             selectedDateLabel.isHidden = false
 
             let backButton = UIButton(type: .system)
@@ -355,51 +495,79 @@
 
         @objc func previousDay() {
             currentSelectedDate = Calendar.current.date(byAdding: .day, value: -1, to: currentSelectedDate)!
-            selectedDateLabel.text = "Today is: \(formattedDate(currentSelectedDate))"
+            selectedDateLabel.text = formattedDate(currentSelectedDate) // ✅ Remove "Today is:"
+            hourlyTableView.reloadData() // ✅ Reload to show tasks for the new date
         }
 
         @objc func nextDay() {
             currentSelectedDate = Calendar.current.date(byAdding: .day, value: 1, to: currentSelectedDate)!
-            selectedDateLabel.text = "Today is: \(formattedDate(currentSelectedDate))"
+            selectedDateLabel.text = formattedDate(currentSelectedDate) // ✅ Remove "Today is:"
+            hourlyTableView.reloadData() // ✅ Reload to show tasks for the new date
         }
 
         func setupHourlyTableView() {
-            hourlyTableView.translatesAutoresizingMaskIntoConstraints = false
-            hourlyTableView.dataSource = self
+            hourlyTableView = UITableView()
             hourlyTableView.delegate = self
-            hourlyTableView.isScrollEnabled = true
-            hourlyTableView.isHidden = true
+            hourlyTableView.dataSource = self
+            
+            // Register BOTH cell types
             hourlyTableView.register(HourTaskCell.self, forCellReuseIdentifier: "HourTaskCell")
             hourlyTableView.register(TaskListCell.self, forCellReuseIdentifier: "TaskListCell")
-            hourlyTableView.estimatedRowHeight = 60
+            
+            // Disable selection at table view level
+            hourlyTableView.allowsSelection = false
+            
+            // Use automatic row height for dynamic content
             hourlyTableView.rowHeight = UITableView.automaticDimension
+            hourlyTableView.estimatedRowHeight = 60
+            
+            hourlyTableView.translatesAutoresizingMaskIntoConstraints = false
+            hourlyTableView.isHidden = false
             view.addSubview(hourlyTableView)
 
+            // ✅ Constrain to safe area instead of addTaskButton
             NSLayoutConstraint.activate([
-                hourlyTableView.topAnchor.constraint(equalTo: selectedDateLabel.bottomAnchor, constant: 5),
+                hourlyTableView.topAnchor.constraint(equalTo: dayNavigationStack.bottomAnchor, constant: 10),
                 hourlyTableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
                 hourlyTableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-                hourlyTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -60)
+                hourlyTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -80) // Leave space for button
             ])
         }
 
+        // ✅ Make sure addTaskButton is also added to the main view
         func setupAddTaskButton() {
+            addTaskButton = UIButton(type: .system)
             addTaskButton.setTitle("Add Task", for: .normal)
             addTaskButton.backgroundColor = .systemBlue
             addTaskButton.setTitleColor(.white, for: .normal)
-            addTaskButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
-            addTaskButton.layer.cornerRadius = 10
+            addTaskButton.layer.cornerRadius = 8
+            addTaskButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+            addTaskButton.addTarget(self, action: #selector(addTaskTapped), for: .touchUpInside)
             addTaskButton.translatesAutoresizingMaskIntoConstraints = false
-            addTaskButton.addTarget(self, action: #selector(presentAddTaskPopup), for: .touchUpInside)
+            
+            // ✅ Add to the same view as hourlyTableView
             view.addSubview(addTaskButton)
-
+            
             NSLayoutConstraint.activate([
                 addTaskButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
                 addTaskButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-                addTaskButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
+                addTaskButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
                 addTaskButton.heightAnchor.constraint(equalToConstant: 50)
             ])
         }
+
+        // ✅ Add this delegate method to handle different row heights
+        func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+            if indexPath.row == 0 {
+                // TaskListCell - use automatic dimension
+                return UITableView.automaticDimension
+            } else {
+                // HourTaskCell - fixed height
+                return 60
+            }
+        }
+
+        
 
         @objc func presentAddTaskPopup() {
             // ✅ Reset temp values before showing popup
@@ -546,10 +714,11 @@
 
             switch viewModeControl.selectedSegmentIndex {
             case 0: // Day view
-                selectedDateLabel.text = "Today is: \(formattedDate(Date()))"
+                selectedDateLabel.text = formattedDate(currentSelectedDate) // ✅ Use currentSelectedDate instead of Date()
                 dayNavigationStack?.isHidden = false
                 hourlyTableView.isHidden = false
                 addTaskButton.isHidden = false
+                hourlyTableView.reloadData() // ✅ Reload to show tasks for current date
             case 1: // Month view
                 calendarView.isHidden = false
             case 2: // Year view
@@ -610,7 +779,6 @@
                             endHour += 1
                         }
 
-
                         if hourIndex == startHour && hourIndex == endHour {
                             cell.showShadedRegion(startMinute: startMinute, endMinute: endMinute)
                         } else if hourIndex == startHour {
@@ -630,24 +798,25 @@
                 }
                 return cell
             }
-    // Helper to get all tasks for a specific date as (start, end) tuples for DayTimelineView
-    func timelineTasks(for date: Date) -> [(start: Date, end: Date)] {
-        let dateKey = stringFromDate(date)
-        guard let tasksByHour = tasksByDateAndHour[dateKey] else { return [] }
-        var result: [(start: Date, end: Date)] = []
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: date)
-        for (hour, titles) in tasksByHour {
-            for _ in titles {
-                // For demo, assume each task is 1 hour. You can adjust as needed.
-                if let start = calendar.date(byAdding: .hour, value: hour, to: today),
-                   let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
-                    result.append((start: start, end: end))
+        }
+
+        // Helper to get all tasks for a specific date as (start, end) tuples for DayTimelineView
+        func timelineTasks(for date: Date) -> [(start: Date, end: Date)] {
+            let dateKey = stringFromDate(date)
+            guard let tasksByHour = tasksByDateAndHour[dateKey] else { return [] }
+            var result: [(start: Date, end: Date)] = []
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: date)
+            for (hour, titles) in tasksByHour {
+                for _ in titles {
+                    // For demo, assume each task is 1 hour. You can adjust as needed.
+                    if let start = calendar.date(byAdding: .hour, value: hour, to: today),
+                       let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
+                        result.append((start: start, end: end))
+                    }
                 }
             }
-        }
-        return result
-    }
+            return result
         }
     }
 
@@ -673,73 +842,139 @@
     }
 
     // MARK: - UICollectionView
-    extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-        func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-            return 12
+extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return 12
+    }
+
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MonthCell", for: indexPath) as! YearMonthCell
+        let month = indexPath.item + 1
+        cell.configure(month: month, year: 2025)
+        return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        let width = (collectionView.frame.width - 24) / 3
+        return CGSize(width: width, height: 160)
+    }
+
+    // ✅ Add this method to handle month selection
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let selectedMonth = indexPath.item + 1
+        let currentYear = 2025 // You might want to make this dynamic
+        
+        // Create a date for the first day of the selected month
+        let dateComponents = DateComponents(year: currentYear, month: selectedMonth, day: 1)
+        if let selectedDate = Calendar.current.date(from: dateComponents) {
+            currentSelectedDate = selectedDate
+            
+            // Switch to month view to show the selected month
+            viewModeControl.selectedSegmentIndex = 1
+            viewModeChanged()
+            
+            // Update calendar to show the selected month
+            let calendarDateComponents = DateComponents(year: currentYear, month: selectedMonth)
+            calendarView.visibleDateComponents = calendarDateComponents
+            
+            print("Selected month: \(selectedMonth), year: \(currentYear)")
         }
+    }
 
-        func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MonthCell", for: indexPath) as! YearMonthCell
-            let month = indexPath.item + 1
-            cell.configure(month: month, year: 2025)
-            return cell
-        }
+    @objc func timeFieldTapped(_ sender: UITapGestureRecognizer) {
+        guard let textField = sender.view as? UITextField else { return }
 
-        func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-            let width = (collectionView.frame.width - 24) / 3
-            return CGSize(width: width, height: 160)
-        }
+        // ✅ Create a simple time picker alert instead of a custom view controller
+        let timePickerAlert = UIAlertController(title: "Select Time", message: "\n\n\n\n\n\n", preferredStyle: .alert)
+        
+        let timePicker = UIDatePicker()
+        timePicker.datePickerMode = .time
+        timePicker.preferredDatePickerStyle = .wheels
+        timePicker.translatesAutoresizingMaskIntoConstraints = false
+        
+        timePickerAlert.view.addSubview(timePicker)
+        
+        NSLayoutConstraint.activate([
+            timePicker.centerXAnchor.constraint(equalTo: timePickerAlert.view.centerXAnchor),
+            timePicker.topAnchor.constraint(equalTo: timePickerAlert.view.topAnchor, constant: 50)
+        ])
+        
+        let selectAction = UIAlertAction(title: "Select", style: .default) { _ in
+            let selectedDate = timePicker.date
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            let timeString = formatter.string(from: selectedDate)
 
-        @objc func timeFieldTapped(_ sender: UITapGestureRecognizer) {
-            guard let textField = sender.view as? UITextField,
-                  let alert = self.presentedViewController as? UIAlertController else { return }
-
-            let pickerVC = TimePickerViewController()
-            pickerVC.modalPresentationStyle = .overFullScreen
-            pickerVC.onTimeSelected = { selectedDate in
-                let formatter = DateFormatter()
-                formatter.dateFormat = "h:mm a"
-                let timeString = formatter.string(from: selectedDate)
-
-                if textField.tag == 1 {
-                    self.selectedStartTime = selectedDate
-                    self.tempStartTimeText = timeString
-                } else if textField.tag == 2 {
-                    self.selectedEndTime = selectedDate
-                    self.tempEndTimeText = timeString
-                }
-
-                textField.text = timeString
-                pickerVC.dismiss(animated: true)
+            if textField.tag == 1 {
+                self.selectedStartTime = selectedDate
+                self.tempStartTimeText = timeString
+            } else if textField.tag == 2 {
+                self.selectedEndTime = selectedDate
+                self.tempEndTimeText = timeString
             }
-            pickerVC.onCancel = { pickerVC.dismiss(animated: true) }
 
-            alert.present(pickerVC, animated: true)
+            textField.text = timeString
         }
-
-        @objc func dateFieldTapped(_ sender: UITapGestureRecognizer) {
-            guard let textField = sender.view as? UITextField,
-                  let alert = self.presentedViewController as? UIAlertController else { return }
-
-            let pickerVC = DatePickerViewController()
-            pickerVC.modalPresentationStyle = .overFullScreen
-            pickerVC.onDateSelected = { selectedDate in
-                let formatter = DateFormatter()
-                formatter.dateStyle = .medium
-                let dateString = formatter.string(from: selectedDate)
-                self.tempDateText = dateString
-                textField.text = dateString
-                pickerVC.dismiss(animated: true)
-            }
-            pickerVC.onCancel = { pickerVC.dismiss(animated: true) }
-
-            alert.present(pickerVC, animated: true)
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        timePickerAlert.addAction(selectAction)
+        timePickerAlert.addAction(cancelAction)
+        
+        // ✅ Present from the main view controller, not from the alert
+        if let presentedAlert = self.presentedViewController {
+            presentedAlert.present(timePickerAlert, animated: true)
+        } else {
+            self.present(timePickerAlert, animated: true)
         }
+    }
+
+    @objc func dateFieldTapped(_ sender: UITapGestureRecognizer) {
+        guard let textField = sender.view as? UITextField else { return }
+
+        // ✅ Create a simple date picker alert instead of a custom view controller
+        let datePickerAlert = UIAlertController(title: "Select Date", message: "\n\n\n\n\n\n", preferredStyle: .alert)
+        
+        let datePicker = UIDatePicker()
+        datePicker.datePickerMode = .date
+        datePicker.preferredDatePickerStyle = .wheels
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+        
+        datePickerAlert.view.addSubview(datePicker)
+        
+        NSLayoutConstraint.activate([
+            datePicker.centerXAnchor.constraint(equalTo: datePickerAlert.view.centerXAnchor),
+            datePicker.topAnchor.constraint(equalTo: datePickerAlert.view.topAnchor, constant: 50)
+        ])
+        
+        let selectAction = UIAlertAction(title: "Select", style: .default) { _ in
+            let selectedDate = datePicker.date
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            let dateString = formatter.string(from: selectedDate)
+            self.tempDateText = dateString
+            textField.text = dateString
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        datePickerAlert.addAction(selectAction)
+        datePickerAlert.addAction(cancelAction)
+        
+        // ✅ Present from the main view controller, not from the alert
+        if let presentedAlert = self.presentedViewController {
+            presentedAlert.present(datePickerAlert, animated: true)
+        } else {
+            self.present(datePickerAlert, animated: true)
+        }
+    }
+
         @objc private func openTrustedPeople() {
             let trustedVC = TrustedPeopleViewController()
             let navVC = UINavigationController(rootViewController: trustedVC) // adds a nav bar
             present(navVC, animated: true)
         }
+    
         @objc private func trustedPeopleFieldTapped(_ sender: UITapGestureRecognizer) {
             guard let textField = sender.view as? UITextField,
                   let alert = self.presentedViewController as? UIAlertController else { return }
@@ -767,10 +1002,7 @@
 
 
 
-        // MARK: - TableView Delegate
-        func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-            return 80 // Or 100, depending on how much vertical spacing you want
-        }
+
     }
 
     // MARK: - Safe Array Index
@@ -786,4 +1018,44 @@ extension CalendarViewController: UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound])
     }
 }
+
+// MARK: - UICalendarSelectionSingleDateDelegate
+// ✅ This handles clicking on a day in month view
+extension CalendarViewController: UICalendarSelectionSingleDateDelegate {
+    func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
+        guard let dateComponents = dateComponents,
+              let selectedDate = Calendar.current.date(from: dateComponents) else { return }
+        
+        // Update the current selected date
+        currentSelectedDate = selectedDate
+        
+        // Switch to day view to show the selected date
+        viewModeControl.selectedSegmentIndex = 0  // 👈 This switches to day view
+        viewModeChanged()
+        
+        // Update the date label
+        selectedDateLabel.text = formattedDate(selectedDate)
+        
+        // Reload the table view to show tasks for the selected date
+        hourlyTableView.reloadData()
+        
+        print("Selected date: \(selectedDate)")
+    }
+}
+
+// MARK: - UICalendarViewDelegate
+extension CalendarViewController: UICalendarViewDelegate {
+    func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
+        // Optional: Add decorations for dates with tasks
+        guard let date = Calendar.current.date(from: dateComponents) else { return nil }
+        let dateKey = stringFromDate(date)
+        
+        if tasksByDateAndHour[dateKey] != nil {
+            return .default(color: .systemBlue, size: .large)
+        }
+        
+        return nil
+    }
+}
+
 

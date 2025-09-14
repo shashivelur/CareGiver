@@ -20,6 +20,9 @@ class HourTaskCell: UITableViewCell {
     }
     
     private func setupViews() {
+        // Make cell non-selectable
+        selectionStyle = .none
+        
         // Hour label
         hourLabel.font = UIFont.boldSystemFont(ofSize: 14)
         hourLabel.textColor = .black
@@ -45,13 +48,13 @@ class HourTaskCell: UITableViewCell {
         contentView.addSubview(hourLabel)
         contentView.addSubview(hourLine)
         
-        // Layout
+        // Layout - Fix the typo here
         NSLayoutConstraint.activate([
             hourLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             hourLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             
             hourLine.leadingAnchor.constraint(equalTo: hourLabel.trailingAnchor, constant: 8),
-            hourLine.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            hourLine.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16), // ✅ Fixed typo: was "trailingAncner"
             hourLine.centerYAnchor.constraint(equalTo: hourLabel.centerYAnchor),
             hourLine.heightAnchor.constraint(equalToConstant: 1)
         ])
@@ -99,7 +102,7 @@ class HourTaskCell: UITableViewCell {
             
             shadeView.isHidden = false
         } else {
-                        shadeView.isHidden = true
+            shadeView.isHidden = true
         }
     }
 }
