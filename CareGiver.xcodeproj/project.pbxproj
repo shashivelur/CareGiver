@@ -41,6 +41,7 @@
 		A1B2C3D4E644 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E645 /* Assets.xcassets */; };
 		A1B2C3D4E646 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E647 /* LaunchScreen.storyboard */; };
 		A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E681 /* FinancialAssistanceViewController.swift */; };
+		C095B2252E777512000FD409 /* ChatGPTSwift in Frameworks */ = {isa = PBXBuildFile; productRef = C095B2242E777512000FD409 /* ChatGPTSwift */; };
 		E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */; };
 		E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */; };
 		E67EF1822E77695C0086D673 /* GovernmentAidWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */; };
@@ -92,6 +93,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C095B2252E777512000FD409 /* ChatGPTSwift in Frameworks */,
 				6111DB122E6DCF7600D0DE04 /* SideMenu in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -233,6 +235,7 @@
 			mainGroup = A1B2C3D4E652;
 			packageReferences = (
 				6111DB102E6DCF7600D0DE04 /* XCRemoteSwiftPackageReference "SideMenu" */,
+				C095B2232E777512000FD409 /* XCRemoteSwiftPackageReference "ChatGPTSwift" */,
 			);
 			productRefGroup = A1B2C3D4E654 /* Products */;
 			projectDirPath = "";
@@ -532,6 +535,14 @@
 				minimumVersion = 6.5.0;
 			};
 		};
+		C095B2232E777512000FD409 /* XCRemoteSwiftPackageReference "ChatGPTSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alfianlosari/ChatGPTSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -539,6 +550,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6111DB102E6DCF7600D0DE04 /* XCRemoteSwiftPackageReference "SideMenu" */;
 			productName = SideMenu;
+		};
+		C095B2242E777512000FD409 /* ChatGPTSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C095B2232E777512000FD409 /* XCRemoteSwiftPackageReference "ChatGPTSwift" */;
+			productName = ChatGPTSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 
