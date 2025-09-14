@@ -296,75 +296,85 @@ class HomeViewController: UIViewController {
         }
     
     private func createPatientInfoView(for patient: Patient) -> UIView {
-        let containerView = UIView()
-        containerView.backgroundColor = .secondarySystemBackground
-        containerView.layer.cornerRadius = 12
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        
-        let stackView = UIStackView()
-        stackView.axis = .vertical
-        stackView.spacing = 8
-        stackView.alignment = .leading
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        let nameLabel = UILabel()
-        nameLabel.text = "\(patient.firstName ?? "") \(patient.lastName ?? "")"
-        nameLabel.font = UIFont.boldSystemFont(ofSize: 20)
-        nameLabel.textColor = .label
-        
-        let emailLabel = UILabel()
-        emailLabel.text = "Email: \(patient.email ?? "N/A")"
-        emailLabel.font = UIFont.systemFont(ofSize: 16)
-        emailLabel.textColor = .secondaryLabel
-        
-        let phoneLabel = UILabel()
-        phoneLabel.text = "Phone: \(patient.phoneNumber ?? "N/A")"
-        phoneLabel.font = UIFont.systemFont(ofSize: 16)
-        phoneLabel.textColor = .secondaryLabel
-        
-        let dobLabel = UILabel()
-        if let dob = patient.dateOfBirth {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            dobLabel.text = "Date of Birth: \(formatter.string(from: dob))"
-        } else {
-            dobLabel.text = "Date of Birth: N/A"
+            let containerView = UIView()
+            containerView.backgroundColor = .secondarySystemBackground
+            containerView.layer.cornerRadius = 12
+            containerView.translatesAutoresizingMaskIntoConstraints = false
+            
+            let stackView = UIStackView()
+            stackView.axis = .vertical
+            stackView.spacing = 8
+            stackView.alignment = .leading
+            stackView.translatesAutoresizingMaskIntoConstraints = false
+            
+            let nameLabel = UILabel()
+            let firstName = patient.firstName ?? ""
+            let lastName = patient.lastName ?? ""
+            nameLabel.text = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+            nameLabel.font = UIFont.boldSystemFont(ofSize: 20)
+            nameLabel.textColor = .label
+            
+            let emailLabel = UILabel()
+            emailLabel.text = "Email: \(patient.email ?? "N/A")"
+            emailLabel.font = UIFont.systemFont(ofSize: 16)
+            emailLabel.textColor = .secondaryLabel
+            
+            let phoneLabel = UILabel()
+            phoneLabel.text = "Phone: \(patient.phoneNumber ?? "N/A")"
+            phoneLabel.font = UIFont.systemFont(ofSize: 16)
+            phoneLabel.textColor = .secondaryLabel
+            
+            let dobLabel = UILabel()
+            if let dob = patient.dateOfBirth {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                dobLabel.text = "Date of Birth: \(formatter.string(from: dob))"
+            } else {
+                dobLabel.text = "Date of Birth: N/A"
+            }
+            dobLabel.font = UIFont.systemFont(ofSize: 16)
+            dobLabel.textColor = .secondaryLabel
+            
+            let veteranLabel = UILabel()
+            veteranLabel.text = "Veteran Status: \(patient.veteranStatus ? "Yes" : "No")"
+            veteranLabel.font = UIFont.systemFont(ofSize: 16)
+            veteranLabel.textColor = .secondaryLabel
+            
+            // Simplified income range access - just use the property directly
+            let incomeLabel = UILabel()
+            incomeLabel.text = "Income Range: \(patient.incomeRange ?? "N/A")"
+            incomeLabel.font = UIFont.systemFont(ofSize: 16)
+            incomeLabel.textColor = .secondaryLabel
+            
+            // Debug: Print patient data to see what's actually there
+            print("=== Patient Debug Info ===")
+            print("First Name: '\(patient.firstName ?? "nil")'")
+            print("Last Name: '\(patient.lastName ?? "nil")'")
+            print("Email: '\(patient.email ?? "nil")'")
+            print("Phone: '\(patient.phoneNumber ?? "nil")'")
+            print("DOB: '\(patient.dateOfBirth?.description ?? "nil")'")
+            print("Veteran: \(patient.veteranStatus)")
+            print("Income Range: '\(patient.incomeRange ?? "nil")'")
+            print("==========================")
+            
+            stackView.addArrangedSubview(nameLabel)
+            stackView.addArrangedSubview(emailLabel)
+            stackView.addArrangedSubview(phoneLabel)
+            stackView.addArrangedSubview(dobLabel)
+            stackView.addArrangedSubview(veteranLabel)
+            stackView.addArrangedSubview(incomeLabel)
+            
+            containerView.addSubview(stackView)
+            
+            NSLayoutConstraint.activate([
+                stackView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 16),
+                stackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+                stackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+                stackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
+            ])
+            
+            return containerView
         }
-        dobLabel.font = UIFont.systemFont(ofSize: 16)
-        dobLabel.textColor = .secondaryLabel
-        
-        let veteranLabel = UILabel()
-        veteranLabel.text = "Veteran Status: \(patient.veteranStatus ? "Yes" : "No")"
-        veteranLabel.font = UIFont.systemFont(ofSize: 16)
-        veteranLabel.textColor = .secondaryLabel
-        
-        let incomeLabel = UILabel()
-        if let income = patient.value(forKey: "incomeRange") as? String {
-            incomeLabel.text = "Income Range: \(income)"
-        } else {
-            incomeLabel.text = "Income Range: N/A"
-        }
-        incomeLabel.font = UIFont.systemFont(ofSize: 16)
-        incomeLabel.textColor = .secondaryLabel
-        
-        stackView.addArrangedSubview(nameLabel)
-        stackView.addArrangedSubview(emailLabel)
-        stackView.addArrangedSubview(phoneLabel)
-        stackView.addArrangedSubview(dobLabel)
-        stackView.addArrangedSubview(veteranLabel)
-        stackView.addArrangedSubview(incomeLabel)
-        
-        containerView.addSubview(stackView)
-        
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 16),
-            stackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            stackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
-            stackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
-        ])
-        
-        return containerView
-    }
     
     private func createTaskBox(title: String, description: String) -> UIView {
         let box = UIView()
@@ -655,28 +665,29 @@ class AddPatientViewController: UIViewController {
     }
     
     private func savePatient() {
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        let context = appDelegate.persistentContainer.viewContext
-        
-        let patient = Patient(context: context)
-        patient.firstName = firstNameTextField.text
-        patient.lastName = lastNameTextField.text
-        patient.email = emailTextField.text
-        patient.phoneNumber = phoneTextField.text
-        patient.dateOfBirth = dateOfBirthPicker.date
-        patient.veteranStatus = isVeteran
-        patient.setValue(selectedIncome, forKey: "incomeRange")
-        
-        do {
-            try context.save()
-            // Post notification before dismissing
-            NotificationCenter.default.post(name: NSNotification.Name("PatientCreated"), object: nil)
+            guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+            let context = appDelegate.persistentContainer.viewContext
             
-            dismiss(animated: true)
-        } catch {
-            showAlert(message: "Failed to save patient: \(error.localizedDescription)")
+            let patient = Patient(context: context)
+            patient.firstName = firstNameTextField.text
+            patient.lastName = lastNameTextField.text
+            patient.email = emailTextField.text
+            patient.phoneNumber = phoneTextField.text
+            patient.dateOfBirth = dateOfBirthPicker.date
+            patient.veteranStatus = isVeteran
+            patient.incomeRange = selectedIncome  // Simple property assignment
+            
+            do {
+                try context.save()
+                print("Patient saved successfully with income: \(selectedIncome)")
+                
+                NotificationCenter.default.post(name: NSNotification.Name("PatientCreated"), object: nil)
+                dismiss(animated: true)
+            } catch {
+                print("Failed to save patient: \(error)")
+                showAlert(message: "Failed to save patient: \(error.localizedDescription)")
+            }
         }
-    }
     
     private func showAlert(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
