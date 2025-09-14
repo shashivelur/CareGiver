@@ -43,6 +43,7 @@
 		A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E681 /* FinancialAssistanceViewController.swift */; };
 		E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */; };
 		E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */; };
+		E67EF1822E77695C0086D673 /* GovernmentAidWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -83,6 +84,7 @@
 		A1B2C3D4E681 /* FinancialAssistanceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialAssistanceViewController.swift; sourceTree = "<group>"; };
 		E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GovernmentAidInfoViewController.swift; sourceTree = "<group>"; };
 		E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AidDetailViewController 2.swift"; sourceTree = "<group>"; };
+		E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GovernmentAidWebViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +133,8 @@
 			children = (
 				E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */,
 				E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */,
+				E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */,
+				A1B2C3D4E681 /* FinancialAssistanceViewController.swift */,
 				6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */,
 				A1B2C3D4E601 /* LoginViewController.swift */,
 				A1B2C3D4E605 /* MainTabBarController.swift */,
@@ -152,7 +156,6 @@
 				A1B2C3D4E623 /* NotificationsViewController.swift */,
 				A1B2C3D4E625 /* ReportsViewController.swift */,
 				A1B2C3D4E627 /* HelpViewController.swift */,
-				A1B2C3D4E681 /* FinancialAssistanceViewController.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -277,6 +280,7 @@
 				5CC275B02E526E5C003408F7 /* TaskListCell.swift in Sources */,
 				A1B2C3D4E620 /* SettingsViewController.swift in Sources */,
 				A1B2C3D4E622 /* NotificationsViewController.swift in Sources */,
+				E67EF1822E77695C0086D673 /* GovernmentAidWebViewController.swift in Sources */,
 				A1B2C3D4E624 /* ReportsViewController.swift in Sources */,
 				A1B2C3D4E626 /* HelpViewController.swift in Sources */,
 				5CC275B42E526E7A003408F7 /* HourTaskCell.swift in Sources */,
