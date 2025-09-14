@@ -1,374 +1,38 @@
 import UIKit
 import SafariServices
 
-// MARK: - Main Chatbot View Controller
+// MARK: - Chatbot View Controller (Keyword Bot)
+class ChatbotViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate {
 
-class ChatbotViewController: UIViewController {
-    
-    var currentCaregiver: Caregiver? // Your existing Caregiver model
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-    }
-    
-    private func setupUI() {
-        title = "Chatbot"
-        view.backgroundColor = .systemBackground
-        
-        // Removed "Community Forum" button
-        let buttons = [
-            ("View Common FAQs", #selector(openFAQs)),
-            ("View Resource Links", #selector(openResources)),
-            ("Emotional Support", #selector(openEmotionalSupport)),
-            ("Chat with Support", #selector(openChatSupport))
-        ]
-        
-        var previousButton: UIButton? = nil
-        
-        for (title, selector) in buttons {
-            let button = UIButton(type: .system)
-            button.setTitle(title, for: .normal)
-            button.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .medium)
-            button.backgroundColor = UIColor.systemBlue
-            button.setTitleColor(.white, for: .normal)
-            button.layer.cornerRadius = 10
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.addTarget(self, action: selector, for: .touchUpInside)
-            view.addSubview(button)
-            
-            NSLayoutConstraint.activate([
-                button.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                button.widthAnchor.constraint(equalToConstant: 240),
-                button.heightAnchor.constraint(equalToConstant: 50),
-            ])
-            
-            if let prev = previousButton {
-                button.topAnchor.constraint(equalTo: prev.bottomAnchor, constant: 20).isActive = true
-            } else {
-                button.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 80).isActive = true
-            }
-            
-            previousButton = button
-        }
-    }
-    
-    @objc private func openFAQs() {
-        let faqVC = FAQViewController()
-        navigationController?.pushViewController(faqVC, animated: true)
-    }
-    
-    @objc private func openResources() {
-        let resourcesVC = ResourceLinksViewController()
-        navigationController?.pushViewController(resourcesVC, animated: true)
-    }
-    
-    @objc private func openEmotionalSupport() {
-        let emotionalVC = EmotionalSupportViewController()
-        navigationController?.pushViewController(emotionalVC, animated: true)
-    }
-    
-    @objc private func openChatSupport() {
-        let chatVC = ChatSupportViewController()
-        navigationController?.pushViewController(chatVC, animated: true)
-    }
-}
+    var currentCaregiver: Caregiver? // Required property to fix errors
 
-// MARK: - FAQ View Controller
-
-class FAQViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-    
-    let faqs = [
-        ("How do I manage medication schedules?", "Use a pill organizer and set daily reminders to ensure medications are taken on time."),
-        ("What should I do if the patient has a fever?", "Monitor their temperature, keep them hydrated, and contact a healthcare professional if it gets too high."),
-        ("How can I reduce caregiver stress?", "Take regular breaks, ask for help when needed, and practice self-care activities."),
-        ("When should I call emergency services?", "If the patient experiences severe difficulty breathing, chest pain, or loss of consciousness, call emergency services immediately.")
-    ]
-    
-    let tableView = UITableView()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Common FAQs"
-        view.backgroundColor = .systemBackground
-        
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "FAQCell")
-        tableView.frame = view.bounds
-        view.addSubview(tableView)
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        faqs.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
-        let cell = tableView.dequeueReusableCell(withIdentifier: "FAQCell", for: indexPath)
-        cell.textLabel?.text = faqs[indexPath.row].0
-        cell.accessoryType = .disclosureIndicator
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let answer = faqs[indexPath.row].1
-        let alert = UIAlertController(title: "Answer", message: answer, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Got it", style: .default))
-        present(alert, animated: true)
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
-}
-
-// MARK: - Resource Links View Controller
-
-class ResourceLinksViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-    
-    let resources = [
-        ("Caregiver Support Network", "https://www.caregiver.org/"),
-        ("MedlinePlus - Caregiving", "https://medlineplus.gov/caregiving.html"),
-        ("National Institute on Aging", "https://www.nia.nih.gov/health/caregiving"),
-        ("Family Caregiver Alliance", "https://www.caregiver.org/resource/caregiver-health/")
-    ]
-    
-    let tableView = UITableView()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Resource Links"
-        view.backgroundColor = .systemBackground
-        
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ResourceCell")
-        tableView.frame = view.bounds
-        view.addSubview(tableView)
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        resources.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ResourceCell", for: indexPath)
-        cell.textLabel?.text = resources[indexPath.row].0
-        cell.textLabel?.textColor = .systemBlue
-        cell.accessoryType = .disclosureIndicator
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let urlString = resources[indexPath.row].1
-        if let url = URL(string: urlString) {
-            let safariVC = SFSafariViewController(url: url)
-            present(safariVC, animated: true)
-        }
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
-}
-
-// MARK: - Emotional Support View Controller
-
-class EmotionalSupportViewController: UIViewController {
-    
-    let motivationalQuotes = [
-        "You are stronger than you think.",
-        "Every day is a new beginning.",
-        "Your care makes a difference.",
-        "Take it one step at a time.",
-        "Remember to take care of yourself too."
-    ]
-    
-    let quoteLabel = UILabel()
-    let questionLabel = UILabel()
-    let buttonsStackView = UIStackView()
-    let historyButton = UIButton(type: .system)
-    
-    var checkInHistory: [(feeling: String, date: Date)] = []
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Emotional Support"
-        view.backgroundColor = .systemBackground
-        
-        setupUI()
-        showRandomQuote()
-    }
-    
-    private func setupUI() {
-        quoteLabel.font = UIFont.italicSystemFont(ofSize: 22)
-        quoteLabel.textColor = .systemBlue
-        quoteLabel.numberOfLines = 0
-        quoteLabel.textAlignment = .center
-        quoteLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        questionLabel.text = "How are you feeling today?"
-        questionLabel.font = UIFont.systemFont(ofSize: 20, weight: .medium)
-        questionLabel.textAlignment = .center
-        questionLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        buttonsStackView.axis = .horizontal
-        buttonsStackView.alignment = .center
-        buttonsStackView.distribution = .fillEqually
-        buttonsStackView.spacing = 20
-        buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        let goodButton = createButton(title: "Good", color: .systemGreen)
-        goodButton.addTarget(self, action: #selector(feelingButtonTapped(_:)), for: .touchUpInside)
-        let okayButton = createButton(title: "Okay", color: .systemOrange)
-        okayButton.addTarget(self, action: #selector(feelingButtonTapped(_:)), for: .touchUpInside)
-        let notGreatButton = createButton(title: "Not Great", color: .systemRed)
-        notGreatButton.addTarget(self, action: #selector(feelingButtonTapped(_:)), for: .touchUpInside)
-        
-        buttonsStackView.addArrangedSubview(goodButton)
-        buttonsStackView.addArrangedSubview(okayButton)
-        buttonsStackView.addArrangedSubview(notGreatButton)
-        
-        historyButton.setTitle("View Past Check-Ins", for: .normal)
-        historyButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
-        historyButton.translatesAutoresizingMaskIntoConstraints = false
-        historyButton.addTarget(self, action: #selector(showHistory), for: .touchUpInside)
-        
-        view.addSubview(quoteLabel)
-        view.addSubview(questionLabel)
-        view.addSubview(buttonsStackView)
-        view.addSubview(historyButton)
-        
-        NSLayoutConstraint.activate([
-            quoteLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            quoteLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            quoteLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
-            questionLabel.topAnchor.constraint(equalTo: quoteLabel.bottomAnchor, constant: 40),
-            questionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            questionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
-            buttonsStackView.topAnchor.constraint(equalTo: questionLabel.bottomAnchor, constant: 30),
-            buttonsStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            buttonsStackView.heightAnchor.constraint(equalToConstant: 50),
-            buttonsStackView.widthAnchor.constraint(equalToConstant: 300),
-            
-            historyButton.topAnchor.constraint(equalTo: buttonsStackView.bottomAnchor, constant: 40),
-            historyButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            historyButton.heightAnchor.constraint(equalToConstant: 40)
-        ])
-    }
-    
-    private func createButton(title: String, color: UIColor) -> UIButton {
-        let btn = UIButton(type: .system)
-        btn.setTitle(title, for: .normal)
-        btn.backgroundColor = color
-        btn.setTitleColor(.white, for: .normal)
-        btn.layer.cornerRadius = 10
-        btn.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        return btn
-    }
-    
-    private func showRandomQuote() {
-        quoteLabel.text = "\"\(motivationalQuotes.randomElement() ?? "")\""
-    }
-    
-    @objc private func feelingButtonTapped(_ sender: UIButton) {
-        guard let title = sender.currentTitle else { return }
-        var message = ""
-        
-        switch title {
-        case "Good":
-            message = "That's awesome! Keep taking care of yourself."
-        case "Okay":
-            message = "Thanks for sharing. Remember, it's okay to take breaks."
-        case "Not Great":
-            message = "Hang in there! Consider reaching out to friends or professionals."
-        default:
-            break
-        }
-        
-        // Record the response with current date
-        checkInHistory.append((feeling: title, date: Date()))
-        
-        let alert = UIAlertController(title: "Support", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Thanks", style: .default))
-        present(alert, animated: true)
-    }
-    
-    @objc private func showHistory() {
-        let historyVC = CheckInHistoryViewController()
-        historyVC.history = checkInHistory
-        navigationController?.pushViewController(historyVC, animated: true)
-    }
-}
-
-// MARK: - Check-In History View Controller
-
-class CheckInHistoryViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-    
-    var history: [(feeling: String, date: Date)] = []
-    let tableView = UITableView()
-    let dateFormatter: DateFormatter = {
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        df.timeStyle = .short
-        return df
-    }()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Past Check-Ins"
-        view.backgroundColor = .systemBackground
-        
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "HistoryCell")
-        tableView.frame = view.bounds
-        view.addSubview(tableView)
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        history.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
-        let cell = tableView.dequeueReusableCell(withIdentifier: "HistoryCell", for: indexPath)
-        let entry = history[history.count - 1 - indexPath.row] // Show latest first
-        
-        cell.textLabel?.text = "\(entry.feeling) - \(dateFormatter.string(from: entry.date))"
-        cell.selectionStyle = .none
-        return cell
-    }
-}
-
-// MARK: - Chat Support View Controller (Keyword Bot)
-
-class ChatSupportViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate {
-    
     struct Message {
         let text: String
         let isUser: Bool
     }
-    
+
     private var messages: [Message] = []
-    
+
     private let tableView = UITableView()
     private let messageInputContainer = UIView()
     private let messageTextField = UITextField()
     private let sendButton = UIButton(type: .system)
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Chat with Support"
         view.backgroundColor = .systemBackground
-        
+
         setupTableView()
         setupInputComponents()
         setupConstraints()
-        
+
         // Dismiss keyboard on tap outside
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         view.addGestureRecognizer(tapGesture)
     }
-    
+
+    // MARK: - TableView Setup
     private func setupTableView() {
         tableView.dataSource = self
         tableView.delegate = self
@@ -378,67 +42,65 @@ class ChatSupportViewController: UIViewController, UITableViewDataSource, UITabl
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
     }
-    
+
     private func setupInputComponents() {
         messageInputContainer.backgroundColor = UIColor(white: 0.95, alpha: 1)
         messageInputContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(messageInputContainer)
-        
+
         messageTextField.placeholder = "Type a message..."
         messageTextField.borderStyle = .roundedRect
         messageTextField.delegate = self
         messageTextField.translatesAutoresizingMaskIntoConstraints = false
         messageInputContainer.addSubview(messageTextField)
-        
+
         sendButton.setTitle("Send", for: .normal)
         sendButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         messageInputContainer.addSubview(sendButton)
     }
-    
+
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Table view top, left, right
+            // Table view
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            // Bottom is top of message input container
             tableView.bottomAnchor.constraint(equalTo: messageInputContainer.topAnchor),
-            
-            // Input container left, right, bottom
+
+            // Input container
             messageInputContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             messageInputContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             messageInputContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             messageInputContainer.heightAnchor.constraint(equalToConstant: 50),
-            
-            // Text field left, centerY, right to send button
+
+            // Text field
             messageTextField.leadingAnchor.constraint(equalTo: messageInputContainer.leadingAnchor, constant: 10),
             messageTextField.centerYAnchor.constraint(equalTo: messageInputContainer.centerYAnchor),
             messageTextField.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -10),
             messageTextField.heightAnchor.constraint(equalToConstant: 36),
-            
-            // Send button right, centerY, fixed width
+
+            // Send button
             sendButton.trailingAnchor.constraint(equalTo: messageInputContainer.trailingAnchor, constant: -10),
             sendButton.centerYAnchor.constraint(equalTo: messageInputContainer.centerYAnchor),
-            sendButton.widthAnchor.constraint(equalToConstant: 60),
+            sendButton.widthAnchor.constraint(equalToConstant: 60)
         ])
     }
-    
+
     // MARK: - TableView DataSource
-    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-         messages.count
+        messages.count
     }
-    
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         let message = messages[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath)
         cell.textLabel?.text = message.text
         cell.textLabel?.numberOfLines = 0
-        
-        // Align text left or right depending on sender
+
+        // Align text left or right
         if message.isUser {
             cell.textLabel?.textAlignment = .right
             cell.textLabel?.textColor = .systemBlue
@@ -449,67 +111,98 @@ class ChatSupportViewController: UIViewController, UITableViewDataSource, UITabl
         cell.selectionStyle = .none
         return cell
     }
-    
-    // MARK: - Send message
-    
+
+    // MARK: - Send Message
     @objc private func sendButtonTapped() {
-        guard let text = messageTextField.text, !text.trimmingCharacters(in: .whitespaces).isEmpty else {
-            return
-        }
-        
+        guard let text = messageTextField.text?.trimmingCharacters(in: .whitespaces), !text.isEmpty else { return }
+
         appendMessage(text, isUser: true)
         messageTextField.text = ""
-        
-        // Simulate bot response after a delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let response = self.getBotResponse(for: text)
             self.appendMessage(response, isUser: false)
         }
     }
-    
+
     private func appendMessage(_ text: String, isUser: Bool) {
         messages.append(Message(text: text, isUser: isUser))
         tableView.reloadData()
-        
-        // Scroll to bottom
+
         let indexPath = IndexPath(row: messages.count - 1, section: 0)
         tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
     }
-    
+
     private func getBotResponse(for userInput: String) -> String {
-        let lowercasedInput = userInput.lowercased()
-        
-        // Define some keyword-based responses
+        let lower = userInput.lowercased()
+
         let keywordResponses: [(keywords: [String], response: String)] = [
-            (["hello", "hi", "hey"], "Hello! How can I assist you today?"),
-            (["medication", "medicine", "pill"], "Remember to take your medication on time. If you have questions, feel free to ask!"),
-            (["stress", "tired", "overwhelmed"], "It's important to take breaks and practice self-care. You're doing great!"),
-            (["help", "support", "assist"], "I'm here to help! What do you need assistance with?"),
-            (["emergency", "urgent", "danger"], "If this is an emergency, please call your local emergency services immediately."),
-            (["thank", "thanks"], "You're very welcome! Let me know if you need anything else."),
-            (["goodbye", "bye", "see you"], "Goodbye! Take care and reach out anytime.")
+            (["hello","hi","hey","greetings"], "Hello! How can I assist you today?"),
+            (["medication","medicine","pill","dose","pharmacy"], "Remember to take your medication on time. Ask if you need help!"),
+            (["stress","tired","overwhelmed","anxious","sad"], "Take breaks and practice self-care. You're doing great!"),
+            (["help","support","assist","guide","advice"], "I'm here to help! What do you need assistance with?"),
+            (["emergency","urgent","danger","911","accident"], "If this is an emergency, please call your local emergency services immediately."),
+            (["thank","thanks","appreciate","grateful"], "You're welcome! Let me know if you need anything else."),
+            (["goodbye","bye","see you","later","cya"], "Goodbye! Take care and reach out anytime."),
+            (["appointment","doctor","clinic","checkup","hospital"], "Make sure to schedule regular appointments and follow doctor's instructions."),
+            (["symptom","pain","fever","cough","headache"], "Monitor symptoms and contact a healthcare professional if needed."),
+            (["nutrition","diet","food","meal","healthy"], "A balanced diet is important. Include fruits, vegetables, and enough water."),
+            (["exercise","walk","stretch","fitness","movement"], "Regular exercise can help both you and your patient stay healthy."),
+            (["sleep","rest","insomnia","nap","tired"], "Adequate rest is essential. Try to maintain a sleep routine."),
+            (["appointment","schedule","calendar","reminder","plan"], "Use a planner or reminder app to keep track of schedules."),
+            (["cleaning","housework","laundry","chores","tidy"], "Break tasks into small steps and take breaks as needed."),
+            (["medicare","insurance","policy","coverage","claim"], "Check your insurance policy and contact the provider for details."),
+            (["behavior","mood","temper","angry","sad"], "Observe patterns and provide comfort. Contact professionals if necessary."),
+            (["safety","fall","hazard","risk","danger"], "Ensure the home is safe. Remove hazards and supervise activities if needed."),
+            (["hydration","water","drink","thirsty","dehydrated"], "Keep hydrated. Drink enough water throughout the day."),
+            (["emotional","support","therapy","counseling","mental"], "Seeking emotional support or counseling is always okay."),
+            (["equipment","wheelchair","walker","cane","assistive"], "Check that all medical equipment is functioning properly."),
+            (["reminder","alert","notification","alarm","timer"], "Set reminders for medication, appointments, and daily tasks."),
+            (["appointment","doctor","dentist","eye","specialist"], "Keep track of all healthcare appointments."),
+            (["temperature","blood pressure","heart rate","pulse","oxygen"], "Monitor vital signs regularly."),
+            (["emergency","hospital","ambulance","911","urgent"], "Call emergency services if there is immediate danger."),
+            (["calm","relax","breathe","meditation","mindfulness"], "Take a moment to breathe and relax."),
+            (["family","friend","support","network","help"], "Reach out to your support network when needed."),
+            (["insurance","coverage","plan","policy","claim"], "Review insurance coverage to avoid unexpected costs."),
+            (["task","schedule","plan","organize","priority"], "Organize tasks by priority and take breaks."),
+            (["symptoms","check","monitor","observe","health"], "Keep a log of symptoms and share with the doctor."),
+            (["diet","nutrition","meal","healthy","food"], "Maintain a balanced diet for you and your patient."),
+            (["exercise","walk","stretch","movement","fitness"], "Regular physical activity is beneficial."),
+            (["sleep","rest","nap","bedtime","insomnia"], "Maintain a regular sleep schedule."),
+            (["stress","anxiety","relaxation","calm","mental"], "Try mindfulness exercises or take a short break."),
+            (["appointment","doctor","clinic","checkup","schedule"], "Ensure all appointments are noted and not missed."),
+            (["question","ask","information","help","support"], "Feel free to ask me any questions."),
+            (["danger","urgent","alert","emergency","risk"], "Call emergency services if required."),
+            (["thank you","thanks","appreciate","grateful","ty"], "You're welcome!"),
+            (["good night","bye","see you","later","cya"], "Goodbye! Take care."),
+            (["hydration","drink","water","thirsty","fluid"], "Remember to drink water regularly."),
+            (["medication","dose","pill","medicine","pharmacy"], "Take your medications as prescribed."),
+            (["check","reminder","alert","task","note"], "Set reminders to stay organized."),
+            (["mood","feel","happy","sad","tired"], "Keep track of feelings and take care of yourself."),
+            (["support","help","assist","guide","care"], "I’m here to assist whenever needed."),
+            (["emergency","911","urgent","danger","hospital"], "In emergencies, call for help immediately."),
+            (["food","meal","snack","diet","nutrition"], "Eat balanced meals throughout the day."),
+            (["exercise","movement","walk","stretch","fitness"], "Stay active daily for better health."),
+            (["rest","sleep","nap","tired","insomnia"], "Ensure enough rest and sleep."),
+            (["appointment","schedule","doctor","clinic","reminder"], "Keep track of appointments for better care."),
+            (["family","friend","network","support","caregiver"], "Reach out for help from friends or family."),
         ]
-        
-        // Check for keywords in user input and return matching response
+
         for (keywords, response) in keywordResponses {
             for keyword in keywords {
-                if lowercasedInput.contains(keyword) {
-                    return response
-                }
+                if lower.contains(keyword) { return response }
             }
         }
-        
-        // Default response if no keywords matched
+
         return "Sorry, I didn't understand that. Could you please rephrase?"
     }
-    
+
     // MARK: - UITextFieldDelegate
-    
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         sendButtonTapped()
         return true
     }
-    
+
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
