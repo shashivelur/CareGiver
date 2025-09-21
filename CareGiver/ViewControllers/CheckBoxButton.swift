@@ -35,7 +35,15 @@ class CheckboxButton: UIButton {
     private func updateAppearance() {
         let image = isChecked ? checkedImage : uncheckedImage
         setImage(image, for: .normal)
-        tintColor = isChecked ? .systemBlue : .lightGray
+        tintColor = isChecked ? .systemGreen : .lightGray
+        
+        // Add green background when checked
+        if isChecked {
+            backgroundColor = UIColor.systemGreen.withAlphaComponent(0.2)
+            layer.cornerRadius = 4
+        } else {
+            backgroundColor = .clear
+        }
     }
 }
 
