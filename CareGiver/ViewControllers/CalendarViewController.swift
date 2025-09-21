@@ -15,7 +15,7 @@ class TrustedPeoplePickerViewController: UIViewController, UITableViewDataSource
     private let saveButton = UIButton(type: .system)
     private let cancelButton = UIButton(type: .system)
 
-    override func viewDidLoad() {
+    override func viewDidLoad() { 
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         trustedPeople = loadTrustedPeople()
@@ -256,7 +256,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     // Key = date string ("yyyy-MM-dd"), value = [hour: [tasks]]
     var tasksByDateAndHour: [String: [Int: [String]]] = [:] { didSet { saveTasks() } }
     
-    // Recently completed tasks (disappear at end of day)
+    // Recently completed tasks (persists, shows last 3)
     var recentlyCompletedTasks: [String] = [] { didSet { saveTasks() } }
 
     // Store selected time values and which field was tapped
@@ -540,9 +540,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
             // Check for time conflicts
             if self.hasTimeConflict(dateKey: dateKey, hour: hour) {
-                let alert = UIAlertController(title: "Time Conflict", message: "You already have a task scheduled at this time. Please choose a different time.", preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                self.present(alert, animated: true)
+                self.handleTimeConflict(dateKey: dateKey, hour: hour, newTaskTitle: title, newTaskStartTime: self.selectedStartTime, newTaskEndTime: self.selectedEndTime, newTaskDescription: self.tempDescription, newTaskTrustedPeople: self.tempTrustedPeople)
                 return
             }
 
@@ -886,6 +884,91 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         return tasksForDate[hour] != nil && !tasksForDate[hour]!.isEmpty
     }
     
+    private func handleTimeConflict(dateKey: String, hour: Int, newTaskTitle: String, newTaskStartTime: Date?, newTaskEndTime: Date?, newTaskDescription: String?, newTaskTrustedPeople: [TrustedPerson]) {
+        guard let existingTasks = tasksByDateAndHour[dateKey]?[hour], !existingTasks.isEmpty else { return }
+        
+        let existingTaskName = existingTasks.first ?? "Unknown Task"
+        
+        let alert = UIAlertController(
+            title: "Time Conflict", 
+            message: "You already have '\(existingTaskName)' scheduled at this time. What would you like to do?", 
+            preferredStyle: .alert
+        )
+        
+        // Option 1: Keep existing task, cancel new one
+        let keepExistingAction = UIAlertAction(title: "Keep '\(existingTaskName)'", style: .default) { _ in
+            // Do nothing - just dismiss the alert
+        }
+        
+        // Option 2: Replace existing task with new one
+        let replaceAction = UIAlertAction(title: "Replace with '\(newTaskTitle)'", style: .destructive) { _ in
+            // Remove existing task first
+            self.tasksByDateAndHour[dateKey]?[hour]?.removeAll()
+            
+            self.addTaskToSchedule(
+                dateKey: dateKey, 
+                hour: hour, 
+                title: newTaskTitle, 
+                startTime: newTaskStartTime, 
+                endTime: newTaskEndTime, 
+                description: newTaskDescription, 
+                trustedPeople: newTaskTrustedPeople
+            )
+        }
+        
+        // Option 3: Keep both tasks (add new one to the same hour)
+        let keepBothAction = UIAlertAction(title: "Keep Both Tasks", style: .default) { _ in
+            self.addTaskToSchedule(
+                dateKey: dateKey, 
+                hour: hour, 
+                title: newTaskTitle, 
+                startTime: newTaskStartTime, 
+                endTime: newTaskEndTime, 
+                description: newTaskDescription, 
+                trustedPeople: newTaskTrustedPeople
+            )
+        }
+        
+        // Option 4: Cancel
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alert.addAction(keepExistingAction)
+        alert.addAction(replaceAction)
+        alert.addAction(keepBothAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
+    }
+    
+    private func addTaskToSchedule(dateKey: String, hour: Int, title: String, startTime: Date?, endTime: Date?, description: String?, trustedPeople: [TrustedPerson]) {
+        if tasksByDateAndHour[dateKey] == nil {
+            tasksByDateAndHour[dateKey] = [:]
+        }
+
+        if tasksByDateAndHour[dateKey]?[hour] != nil {
+            tasksByDateAndHour[dateKey]?[hour]?.append(title)
+        } else {
+            tasksByDateAndHour[dateKey]?[hour] = [title]
+        }
+
+        if let startTime = startTime {
+            scheduleTaskNotification(title: title, date: startTime, minutesBefore: notificationMinutesBefore)
+        }
+        
+        // Send notification if trusted people are assigned
+        if !trustedPeople.isEmpty {
+            sendTaskAssignmentNotification(taskTitle: title, assignedPeople: trustedPeople)
+        }
+        
+        // Add to Apple Calendar
+        if let startTime = startTime, let endTime = endTime {
+            addTaskToAppleCalendar(title: title, startTime: startTime, endTime: endTime, description: description ?? "")
+        }
+        
+        // Reload table view to show the new task
+        hourlyTableView.reloadData()
+    }
+    
     private func loadNotificationDuration() {
         notificationMinutesBefore = UserDefaults.standard.object(forKey: "notification_duration") as? Int ?? 10
     }
@@ -1053,8 +1136,13 @@ extension CalendarViewController: TaskListCellDelegate {
     }
     
     func didCompleteTask(task: String) {
-        // Add to recently completed tasks
+        // Add to recently completed tasks (limit to last 3)
         recentlyCompletedTasks.append(task)
+        
+        // Keep only the last 3 completed tasks
+        if recentlyCompletedTasks.count > 3 {
+            recentlyCompletedTasks.removeFirst(recentlyCompletedTasks.count - 3)
+        }
         
         // Remove from active tasks
         let dateKey = stringFromDate(currentSelectedDate)
@@ -1072,8 +1160,6 @@ extension CalendarViewController: TaskListCellDelegate {
 
         tasksByDateAndHour[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
         hourlyTableView.reloadData()
-        
-        // Don't auto-clear recently completed tasks - let them persist
     }
     
     func didUncompleteTask(task: String) {
@@ -1104,19 +1190,7 @@ extension CalendarViewController: TaskListCellDelegate {
         presentEditTaskPopup(for: task)
     }
     
-    private func clearRecentlyCompletedTasksAtEndOfDay() {
-        let calendar = Calendar.current
-        let now = Date()
-        let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: now) ?? now
-        
-        // Only clear if it's actually the end of day
-        if calendar.isDate(now, inSameDayAs: endOfDay) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + endOfDay.timeIntervalSince(now)) {
-            self.recentlyCompletedTasks.removeAll()
-            self.hourlyTableView.reloadData()
-        }
-        }
-    }
+    // Removed auto-clear functionality - recently completed tasks now persist
     
 }
 
@@ -1198,8 +1272,7 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
     }
     @objc private func openTrustedPeople() {
         let trustedVC = TrustedPeopleViewController()
-        let navVC = UINavigationController(rootViewController: trustedVC) // adds a nav bar
-        present(navVC, animated: true)
+        present(trustedVC, animated: true)
     }
     @objc private func trustedPeopleFieldTapped(_ sender: UITapGestureRecognizer) {
         guard let textField = sender.view as? UITextField,
