@@ -3,6 +3,11 @@ import UIKit
 class YearMonthCell: UICollectionViewCell {
     private let titleLabel = UILabel()
     private let calendarGrid = MonthCalendarView()
+    
+    var onMonthTapped: ((Int, Int) -> Void)?
+    var onDateTapped: ((Date) -> Void)?
+    private var month: Int = 1
+    private var year: Int = 2025
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,8 +43,25 @@ class YearMonthCell: UICollectionViewCell {
     }
 
     func configure(month: Int, year: Int) {
+        self.month = month
+        self.year = year
+        
         let formatter = DateFormatter()
         titleLabel.text = formatter.monthSymbols[month - 1]
         calendarGrid.setMonth(month, year: year)
+        
+        // Add tap gesture to the entire cell for month navigation
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(cellTapped))
+        addGestureRecognizer(tapGesture)
+        isUserInteractionEnabled = true
+        
+        // Set up date tap handling in the calendar grid
+        calendarGrid.onDateTapped = { [weak self] date in
+            self?.onDateTapped?(date)
+        }
+    }
+    
+    @objc private func cellTapped() {
+        onMonthTapped?(month, year)
     }
 }
