@@ -73,22 +73,58 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
         return b
     }()
 
+    private let backButton: UIButton = {
+        let b = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 24, weight: .bold)
+        b.setImage(UIImage(systemName: "chevron.left", withConfiguration: config), for: .normal)
+        b.tintColor = .systemBlue
+        b.translatesAutoresizingMaskIntoConstraints = false
+        return b
+    }()
+    
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Trusted People"
+        label.font = .boldSystemFont(ofSize: 24)
+        label.textColor = .label
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         trustedPeople = loadPeople()
+
+        // Set up fullscreen presentation
+        modalPresentationStyle = .fullScreen
 
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(TrustedPersonCell.self, forCellReuseIdentifier: "TrustedPersonCell")
         tableView.tableFooterView = UIView()
+        
+        view.addSubview(backButton)
+        view.addSubview(titleLabel)
         view.addSubview(tableView)
         view.addSubview(addButton)
         view.addSubview(addFromContactsButton)
 
         NSLayoutConstraint.activate([
-            addButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            // Back button in top left
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
+
+            // Title label centered
+            titleLabel.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            // Add buttons below back button and title
+            addButton.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 20),
             addButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             addButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             addButton.heightAnchor.constraint(equalToConstant: 48),
@@ -98,6 +134,7 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
             addFromContactsButton.trailingAnchor.constraint(equalTo: addButton.trailingAnchor),
             addFromContactsButton.heightAnchor.constraint(equalToConstant: 48),
 
+            // Table view takes up remaining space
             tableView.topAnchor.constraint(equalTo: addFromContactsButton.bottomAnchor, constant: 16),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -106,6 +143,7 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
 
         addButton.addTarget(self, action: #selector(addPersonTapped), for: .touchUpInside)
         addFromContactsButton.addTarget(self, action: #selector(addFromContactsTapped), for: .touchUpInside)
+        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
     }
 
     // MARK: - TableView
@@ -128,6 +166,11 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
             self.present(menu, animated: true)
         }
         return cell
+    }
+
+    // MARK: - Actions
+    @objc private func backTapped() {
+        dismiss(animated: true)
     }
 
     // MARK: - Add / Edit
