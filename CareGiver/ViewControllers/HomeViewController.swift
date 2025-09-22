@@ -68,6 +68,7 @@ class HomeViewController: UIViewController {
     
     private func setupAddPatientButton() {
         addPatientButton = UIButton(type: .system)
+        addPatientButton.tintColor = .systemIndigo
         addPatientButton.setTitle(" Add Patient", for: .normal)
         addPatientButton.setImage(UIImage(systemName: "plus"), for: .normal)
         addPatientButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
@@ -133,7 +134,7 @@ class HomeViewController: UIViewController {
             let tabButton = UIButton(type: .system)
             tabButton.setTitle(patient.firstName ?? "Patient \(index + 1)", for: .normal)
             tabButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-            tabButton.backgroundColor = index == selectedPatientIndex ? .systemBlue : .secondarySystemBackground
+            tabButton.backgroundColor = index == selectedPatientIndex ? .systemIndigo : .white
             tabButton.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
             tabButton.layer.cornerRadius = 8
             tabButton.tag = index
@@ -171,7 +172,7 @@ class HomeViewController: UIViewController {
     private func updateTabAppearance() {
         for (index, view) in patientTabsStackView.arrangedSubviews.enumerated() {
             if let button = view as? UIButton {
-                button.backgroundColor = index == selectedPatientIndex ? .systemBlue : .secondarySystemBackground
+                button.backgroundColor = index == selectedPatientIndex ? .systemIndigo : .white
                 button.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
             }
         }
@@ -297,7 +298,7 @@ class HomeViewController: UIViewController {
     
     private func createPatientInfoView(for patient: Patient) -> UIView {
             let containerView = UIView()
-            containerView.backgroundColor = .secondarySystemBackground
+            containerView.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.95)
             containerView.layer.cornerRadius = 12
             containerView.translatesAutoresizingMaskIntoConstraints = false
             
@@ -312,17 +313,17 @@ class HomeViewController: UIViewController {
             let lastName = patient.lastName ?? ""
             nameLabel.text = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
             nameLabel.font = UIFont.boldSystemFont(ofSize: 20)
-            nameLabel.textColor = .label
+            nameLabel.textColor = .white
             
             let emailLabel = UILabel()
             emailLabel.text = "Email: \(patient.email ?? "N/A")"
             emailLabel.font = UIFont.systemFont(ofSize: 16)
-            emailLabel.textColor = .secondaryLabel
+            emailLabel.textColor = .white
             
             let phoneLabel = UILabel()
             phoneLabel.text = "Phone: \(patient.phoneNumber ?? "N/A")"
             phoneLabel.font = UIFont.systemFont(ofSize: 16)
-            phoneLabel.textColor = .secondaryLabel
+            phoneLabel.textColor = .white
             
             let dobLabel = UILabel()
             if let dob = patient.dateOfBirth {
@@ -333,18 +334,18 @@ class HomeViewController: UIViewController {
                 dobLabel.text = "Date of Birth: N/A"
             }
             dobLabel.font = UIFont.systemFont(ofSize: 16)
-            dobLabel.textColor = .secondaryLabel
+            dobLabel.textColor = .white
             
             let veteranLabel = UILabel()
             veteranLabel.text = "Veteran Status: \(patient.veteranStatus ? "Yes" : "No")"
             veteranLabel.font = UIFont.systemFont(ofSize: 16)
-            veteranLabel.textColor = .secondaryLabel
+            veteranLabel.textColor = .white
             
             // Simplified income range access - just use the property directly
             let incomeLabel = UILabel()
             incomeLabel.text = "Income Range: \(patient.incomeRange ?? "N/A")"
             incomeLabel.font = UIFont.systemFont(ofSize: 16)
-            incomeLabel.textColor = .secondaryLabel
+            incomeLabel.textColor = .white
             
             // Debug: Print patient data to see what's actually there
             print("=== Patient Debug Info ===")
@@ -378,7 +379,7 @@ class HomeViewController: UIViewController {
     
     private func createTaskBox(title: String, description: String) -> UIView {
         let box = UIView()
-        box.backgroundColor = .secondarySystemBackground
+        box.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.95)
         box.layer.cornerRadius = 12
         box.layer.shadowColor = UIColor.black.cgColor
         box.layer.shadowOpacity = 0.1
@@ -389,12 +390,12 @@ class HomeViewController: UIViewController {
         let titleLabel = UILabel()
         titleLabel.text = title
         titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
-        titleLabel.textColor = .label
+        titleLabel.textColor = .white
         
         let descLabel = UILabel()
         descLabel.text = description
         descLabel.font = UIFont.systemFont(ofSize: 14)
-        descLabel.textColor = .secondaryLabel
+        descLabel.textColor = .white
         descLabel.numberOfLines = 0
         
         let stackView = UIStackView(arrangedSubviews: [titleLabel, descLabel])
@@ -491,24 +492,29 @@ class AddPatientViewController: UIViewController {
         
         // First Name
         firstNameTextField = createTextField(placeholder: "First Name")
+        firstNameTextField.tintColor = .systemIndigo
         stackView.addArrangedSubview(createFormSection(title: "First Name", content: firstNameTextField))
         
         // Last Name
         lastNameTextField = createTextField(placeholder: "Last Name")
+        lastNameTextField.tintColor = .systemIndigo
         stackView.addArrangedSubview(createFormSection(title: "Last Name", content: lastNameTextField))
         
         // Email
         emailTextField = createTextField(placeholder: "Email")
+        emailTextField.tintColor = .systemIndigo
         emailTextField.keyboardType = .emailAddress
         stackView.addArrangedSubview(createFormSection(title: "Email", content: emailTextField))
         
         // Phone Number
         phoneTextField = createTextField(placeholder: "Phone Number")
+        phoneTextField.tintColor = .systemIndigo
         phoneTextField.keyboardType = .phonePad
         stackView.addArrangedSubview(createFormSection(title: "Phone Number", content: phoneTextField))
         
         // Date of Birth
         dateOfBirthPicker = UIDatePicker()
+        dateOfBirthPicker.tintColor = .systemIndigo
         dateOfBirthPicker.datePickerMode = .date
         dateOfBirthPicker.preferredDatePickerStyle = .compact
         dateOfBirthPicker.maximumDate = Date()
@@ -517,6 +523,7 @@ class AddPatientViewController: UIViewController {
         // Veteran Status
         let veteranContainer = UIView()
         veteranCheckbox = UIButton(type: .system)
+        veteranCheckbox.tintColor = .systemIndigo
         veteranCheckbox.setImage(UIImage(systemName: "square"), for: .normal)
         veteranCheckbox.setImage(UIImage(systemName: "checkmark.square.fill"), for: .selected)
         veteranCheckbox.addTarget(self, action: #selector(veteranCheckboxTapped), for: .touchUpInside)
@@ -547,12 +554,12 @@ class AddPatientViewController: UIViewController {
         
         // Income Dropdown
         incomeDropdown = UIButton(type: .system)
+        incomeDropdown.tintColor = .systemIndigo
         incomeDropdown.setTitle("Select Income Range", for: .normal)
         incomeDropdown.titleLabel?.font = UIFont.systemFont(ofSize: 16)
         incomeDropdown.contentHorizontalAlignment = .left
         incomeDropdown.backgroundColor = .secondarySystemBackground
         incomeDropdown.layer.cornerRadius = 8
-        incomeDropdown.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
         incomeDropdown.addTarget(self, action: #selector(incomeDropdownTapped), for: .touchUpInside)
         incomeDropdown.translatesAutoresizingMaskIntoConstraints = false
         incomeDropdown.heightAnchor.constraint(equalToConstant: 44).isActive = true

@@ -18,6 +18,7 @@
 		6111DB152E765B3B00D0DE04 /* Patient+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */; };
 		6111DB162E765B3B00D0DE04 /* Patient+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
+		61A3FD072E81B3DF0054301E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A3FD062E81B3DF0054301E /* Theme.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
 		A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F9 /* SceneDelegate.swift */; };
 		A1B2C3D4E600 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E601 /* LoginViewController.swift */; };
@@ -58,6 +59,7 @@
 		6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataClass.swift"; sourceTree = "<group>"; };
 		6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
+		61A3FD062E81B3DF0054301E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E601 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 		A1B2C3D4E656 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				61A3FD062E81B3DF0054301E /* Theme.swift */,
 				A1B2C3D4E629 /* CareGiver.xcdatamodeld */,
 				A1B2C3D4E632 /* CoreDataManager.swift */,
 				A1B2C3D4E634 /* Caregiver+CoreDataClass.swift */,
@@ -297,6 +300,7 @@
 				E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */,
 				A1B2C3D4E5F6 /* AppDelegate.swift in Sources */,
 				A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */,
+				61A3FD072E81B3DF0054301E /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
