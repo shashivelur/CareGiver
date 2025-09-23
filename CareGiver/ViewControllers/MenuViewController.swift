@@ -49,10 +49,13 @@ class MenuViewController: UIViewController {
         loadCurrentCaregiver()
         
         NotificationCenter.default.addObserver(self, selector: #selector(profilePhotoUpdated), name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: NSNotification.Name("SessionChanged"), object: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        loadCurrentCaregiver()
+        loadProfileImageFromDefaults()
         updateHeaderInfo()
     }
     
@@ -154,21 +157,66 @@ class MenuViewController: UIViewController {
     }
     
     private func loadCurrentCaregiver() {
-        if currentCaregiver != nil { return }
-        
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
-        
-        let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
-        request.fetchLimit = 1
-        
-        do {
-            let caregivers = try context.fetch(request)
-            currentCaregiver = caregivers.first
-            updateHeaderInfo()
-        } catch {
-            print("Error loading caregiver: \(error)")
+
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername") {
+            let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+            request.predicate = NSPredicate(format: "username == %@", username)
+            request.fetchLimit = 1
+            do {
+                currentCaregiver = try context.fetch(request).first
+            } catch {
+                print("Error loading caregiver by username: \(error)")
+                currentCaregiver = nil
+            }
+        } else {
+            // Fallback: first caregiver if no session
+            let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+            request.fetchLimit = 1
+            do { currentCaregiver = try context.fetch(request).first } catch { currentCaregiver = nil }
         }
+        updateHeaderInfo()
+    }
+    
+    private func loadProfileImageFromDefaults() {
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername"),
+           let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData_\(username)"),
+           let image = UIImage(data: data) {
+            self.profileImageView.image = image
+            self.profileImageView.tintColor = nil
+            self.profileImageView.contentMode = .scaleAspectFill
+            self.profileImageView.clipsToBounds = true
+        } else if let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData"),
+                  let image = UIImage(data: data) {
+            // Legacy fallback
+            self.profileImageView.image = image
+            self.profileImageView.tintColor = nil
+            self.profileImageView.contentMode = .scaleAspectFill
+            self.profileImageView.clipsToBounds = true
+        } else {
+            // Default placeholder that is visible on indigo background
+            self.profileImageView.image = UIImage(systemName: "person.crop.circle.fill")
+            self.profileImageView.tintColor = .white
+            self.profileImageView.contentMode = .scaleAspectFit
+            self.profileImageView.clipsToBounds = true
+        }
+    }
+    
+    @objc private func profilePhotoUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadProfileImageFromDefaults()
+        }
+    }
+    
+    @objc private func sessionChanged() {
+        loadCurrentCaregiver()
+        loadProfileImageFromDefaults()
+        updateHeaderInfo()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // This function MUST be inside the class
@@ -191,26 +239,6 @@ class MenuViewController: UIViewController {
                 print("Regular dismiss completed")
             }
         }
-    }
-    
-    private func loadProfileImageFromDefaults() {
-        if let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData"),
-           let image = UIImage(data: data) {
-            self.profileImageView.image = image
-            self.profileImageView.tintColor = nil
-            self.profileImageView.contentMode = .scaleAspectFill
-            self.profileImageView.clipsToBounds = true
-        }
-    }
-    
-    @objc private func profilePhotoUpdated() {
-        DispatchQueue.main.async { [weak self] in
-            self?.loadProfileImageFromDefaults()
-        }
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
     }
 }
 
@@ -249,3 +277,4 @@ extension MenuViewController: UITableViewDelegate {
         return 60
     }
 }
+

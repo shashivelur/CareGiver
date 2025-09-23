@@ -38,6 +38,11 @@ class RegisterStep1ViewController: UIViewController {
              do {
                  try createCaregiver()
                  
+                 // Reset per-account profile image so a new account starts clean
+                 ProfileImageStore.remove(for: enteredUsername)
+                 // Notify the app that the active session changed so screens can reload data
+                 NotificationCenter.default.post(name: .SessionChanged, object: nil)
+                 
              } catch {
                  print("There was an error saving the password. Please try again.")
              }
@@ -168,10 +173,26 @@ class RegisterStep1ViewController: UIViewController {
     }
     
 }
-    
-    
-    
 
+extension Notification.Name {
+    static let SessionChanged = Notification.Name("SessionChanged")
+}
 
+struct ProfileImageStore {
+    private static func key(for username: String) -> String { "CaregiverProfileImageData_\(username)" }
 
+    static func save(_ image: UIImage, for username: String) {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        UserDefaults.standard.set(data, forKey: key(for: username))
+    }
+
+    static func load(for username: String) -> UIImage? {
+        guard let data = UserDefaults.standard.data(forKey: key(for: username)) else { return nil }
+        return UIImage(data: data)
+    }
+
+    static func remove(for username: String) {
+        UserDefaults.standard.removeObject(forKey: key(for: username))
+    }
+}
 
