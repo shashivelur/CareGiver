@@ -11,7 +11,10 @@ class SettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        applyAppAppearance(dark: UserDefaults.standard.bool(forKey: darkModeDefaultsKey))
+        // Only apply an override if the user has explicitly set a preference; otherwise, follow system
+        if UserDefaults.standard.object(forKey: darkModeDefaultsKey) != nil {
+            applyAppAppearance(dark: UserDefaults.standard.bool(forKey: darkModeDefaultsKey))
+        }
     }
     
     private func setupUI() {
@@ -256,7 +259,13 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             cell.textLabel?.text = "Dark Mode"
             cell.imageView?.image = nil
             let toggle = UISwitch()
-            toggle.isOn = UserDefaults.standard.bool(forKey: darkModeDefaultsKey)
+            let defaults = UserDefaults.standard
+            if defaults.object(forKey: darkModeDefaultsKey) != nil {
+                toggle.isOn = defaults.bool(forKey: darkModeDefaultsKey)
+            } else {
+                // No saved preference yet — reflect current system appearance
+                toggle.isOn = (traitCollection.userInterfaceStyle == .dark)
+            }
             toggle.onTintColor = .systemIndigo
             toggle.addTarget(self, action: #selector(darkModeSwitchChanged(_:)), for: .valueChanged)
             cell.accessoryView = toggle
