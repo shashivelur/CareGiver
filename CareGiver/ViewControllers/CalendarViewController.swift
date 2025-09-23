@@ -591,10 +591,25 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 break
             }
         }
-        
         guard let hour = taskHour else { return }
         
-        // Create a full edit popup similar to add task
+        // Try to get the real start/end time from selectedStartTime/selectedEndTime if they match this task
+        var startTimeString: String = ""
+        var endTimeString: String = ""
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        if let start = selectedStartTime, let end = selectedEndTime, tempTaskTitle == task {
+            startTimeString = formatter.string(from: start)
+            endTimeString = formatter.string(from: end)
+        } else {
+            // Fallback to hour-based logic
+            let calendar = Calendar.current
+            let startDate = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
+            let endDate = calendar.date(bySettingHour: hour + 1, minute: 0, second: 0, of: Date()) ?? Date()
+            startTimeString = formatter.string(from: startDate)
+            endTimeString = formatter.string(from: endDate)
+        }
+        
         let alert = UIAlertController(title: "Edit Task", message: nil, preferredStyle: .alert)
         
         // Task title
@@ -602,31 +617,19 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             textField.placeholder = "Task Title"
             textField.text = task
         }
-        
         // Start time
         alert.addTextField { textField in
             textField.placeholder = "Start Time"
             textField.tag = 1
             textField.inputView = UIView()
-            // Set current time based on hour
-            let calendar = Calendar.current
-            let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "h:mm a"
-            textField.text = formatter.string(from: date)
+            textField.text = startTimeString
         }
-        
         // End time
         alert.addTextField { textField in
             textField.placeholder = "End Time"
             textField.tag = 2
             textField.inputView = UIView()
-            // Set end time as hour + 1
-            let calendar = Calendar.current
-            let date = calendar.date(bySettingHour: hour + 1, minute: 0, second: 0, of: Date()) ?? Date()
-            let formatter = DateFormatter()
-            formatter.dateFormat = "h:mm a"
-            textField.text = formatter.string(from: date)
+            textField.text = endTimeString
         }
         
         // Start location
@@ -771,7 +774,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         list.append(newTitle)
         targetTasksByHour[targetHour] = list
         tasksByDateAndHour[targetDateKey] = targetTasksByHour
-        
+
+        // Update tempTaskTitle so highlight label updates
+        self.tempTaskTitle = newTitle
+
         // UI refresh
         hourlyTableView.reloadData()
     }
