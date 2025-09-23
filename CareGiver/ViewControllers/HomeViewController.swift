@@ -60,9 +60,15 @@ class HomeViewController: UIViewController {
         
         do {
             patients = try context.fetch(request)
+            if patients.isEmpty {
+                selectedPatientIndex = 0
+            } else if selectedPatientIndex >= patients.count {
+                selectedPatientIndex = max(0, patients.count - 1)
+            }
         } catch {
             print("Error loading patients: \(error)")
             patients = []
+            selectedPatientIndex = 0
         }
     }
     
@@ -116,15 +122,17 @@ class HomeViewController: UIViewController {
         patientTabsScrollView = UIScrollView()
         patientTabsScrollView.showsHorizontalScrollIndicator = false
         patientTabsScrollView.translatesAutoresizingMaskIntoConstraints = false
+        patientTabsScrollView.clipsToBounds = false
         
         patientTabsStackView = UIStackView()
         patientTabsStackView.axis = .horizontal
         patientTabsStackView.spacing = 8
-        patientTabsStackView.alignment = .fill
+        patientTabsStackView.alignment = .center
         patientTabsStackView.distribution = .equalSpacing
         patientTabsStackView.isLayoutMarginsRelativeArrangement = true
         patientTabsStackView.layoutMargins = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
         patientTabsStackView.translatesAutoresizingMaskIntoConstraints = false
+        patientTabsStackView.clipsToBounds = false
         
         patientTabsScrollView.addSubview(patientTabsStackView)
         contentView.addSubview(patientTabsScrollView)
@@ -139,6 +147,10 @@ class HomeViewController: UIViewController {
             tabButton.backgroundColor = index == selectedPatientIndex ? .systemIndigo : .white
             tabButton.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
             tabButton.layer.cornerRadius = 8
+            tabButton.layer.shadowColor = UIColor.black.cgColor
+            tabButton.layer.shadowOpacity = index == selectedPatientIndex ? 0 : 0.1
+            tabButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+            tabButton.layer.shadowRadius = 4
             tabButton.tag = index
             tabButton.addTarget(self, action: #selector(patientTabTapped(_:)), for: .touchUpInside)
             tabButton.translatesAutoresizingMaskIntoConstraints = false
@@ -177,6 +189,10 @@ class HomeViewController: UIViewController {
             if let button = view as? UIButton {
                 button.backgroundColor = index == selectedPatientIndex ? .systemIndigo : .white
                 button.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
+                button.layer.shadowColor = UIColor.black.cgColor
+                button.layer.shadowOpacity = index == selectedPatientIndex ? 0 : 0.1
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 4
             }
         }
     }
@@ -301,13 +317,9 @@ class HomeViewController: UIViewController {
     
     private func createPatientInfoView(for patient: Patient) -> UIView {
             let containerView = UIView()
-            containerView.backgroundColor = .white
-            containerView.layer.cornerRadius = 12
-            containerView.layer.shadowColor = UIColor.black.cgColor
-            containerView.layer.shadowOpacity = 0.1
-            containerView.layer.shadowOffset = CGSize(width: 0, height: 2)
-            containerView.layer.shadowRadius = 4
             containerView.translatesAutoresizingMaskIntoConstraints = false
+            containerView.tag = 1001 // patient info card
+            applyCardStyle(to: containerView)
             
             let stackView = UIStackView()
             stackView.axis = .vertical
@@ -386,13 +398,9 @@ class HomeViewController: UIViewController {
     
     private func createTaskBox(title: String, description: String) -> UIView {
         let box = UIView()
-        box.backgroundColor = .white
-        box.layer.cornerRadius = 12
-        box.layer.shadowColor = UIColor.black.cgColor
-        box.layer.shadowOpacity = 0.1
-        box.layer.shadowOffset = CGSize(width: 0, height: 2)
-        box.layer.shadowRadius = 4
         box.translatesAutoresizingMaskIntoConstraints = false
+        box.tag = 1002 // task box
+        applyCardStyle(to: box)
         
         let titleLabel = UILabel()
         titleLabel.text = title
@@ -421,6 +429,43 @@ class HomeViewController: UIViewController {
         ])
         
         return box
+    }
+    
+    // MARK: - Card styling (light/dark)
+    private func cardBackgroundColor() -> UIColor {
+        return traitCollection.userInterfaceStyle == .dark ? UIColor(white: 0.14, alpha: 1.0) : .white
+    }
+
+    private func cardShadowOpacity() -> Float {
+        return traitCollection.userInterfaceStyle == .dark ? 0.35 : 0.1
+    }
+
+    private func applyCardStyle(to view: UIView) {
+        view.backgroundColor = cardBackgroundColor()
+        view.layer.cornerRadius = 12
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOpacity = cardShadowOpacity()
+        view.layer.shadowOffset = CGSize(width: 0, height: 2)
+        view.layer.shadowRadius = 4
+        view.layer.masksToBounds = false
+    }
+
+    private func updateCardStylesForCurrentAppearance() {
+        // Update top-level patient info card and task boxes added directly to contentView
+        contentView.subviews.forEach { sub in
+            if sub.tag == 1001 || sub.tag == 1002 { // 1001: patient card, 1002: task box
+                applyCardStyle(to: sub)
+            }
+        }
+        // Update any task boxes inside the tasks stack view
+        tasksStackView?.arrangedSubviews.forEach { applyCardStyle(to: $0) }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+            updateCardStylesForCurrentAppearance()
+        }
     }
     
     private func clearContentView() {
