@@ -39,6 +39,7 @@ class HelpViewController: UIViewController {
             target: self,
             action: #selector(backTapped)
         )
+        navigationController?.navigationBar.tintColor = .systemIndigo
 
         // search
         searchController.searchResultsUpdater = self
@@ -85,7 +86,7 @@ extension HelpViewController: UITableViewDataSource, UITableViewDelegate {
         let cell = tableView.dequeueReusableCell(withIdentifier: "HelpCell", for: indexPath)
         cell.textLabel?.text = item.title
         cell.imageView?.image = UIImage(systemName: item.icon)
-        cell.imageView?.tintColor = .systemBlue
+        cell.imageView?.tintColor = .systemIndigo
         cell.accessoryType = .disclosureIndicator
         cell.textLabel?.numberOfLines = 0
         cell.backgroundColor = .secondarySystemBackground
@@ -180,6 +181,7 @@ final class CGHelpFAQViewController: UIViewController {
         super.viewDidLoad()
         title = "FAQs"
         view.backgroundColor = .systemBackground
+        navigationController?.navigationBar.tintColor = .systemIndigo
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "CGFAQCell")
@@ -219,6 +221,7 @@ final class CGSupportOptionsViewController: UIViewController {
         super.viewDidLoad()
         title = "Support"
         view.backgroundColor = .systemBackground
+        navigationController?.navigationBar.tintColor = .systemIndigo
 
         let label = UILabel()
         label.numberOfLines = 0
@@ -245,6 +248,7 @@ final class CGFeedbackViewController: UIViewController {
         super.viewDidLoad()
         title = "Send Feedback"
         view.backgroundColor = .systemBackground
+        navigationController?.navigationBar.tintColor = .systemIndigo
 
         textView.font = .systemFont(ofSize: 16)
         textView.layer.borderColor = UIColor.separator.cgColor
@@ -287,3 +291,4 @@ final class CGFeedbackViewController: UIViewController {
         present(a, animated: true)
     }
 }
+

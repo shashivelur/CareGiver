@@ -94,6 +94,7 @@ class MainTabBarController: UITabBarController {
         
         // Set Home as default selected tab
         selectedIndex = 0
+        tabBar.tintColor = .systemIndigo
         
         // Pass current caregiver to all view controllers
         calendarVC.currentCaregiver = currentCaregiver
@@ -111,6 +112,7 @@ class MainTabBarController: UITabBarController {
         
         // Create side menu navigation controller
         let menuNavController = SideMenuNavigationController(rootViewController: menuViewController)
+        menuNavController.view.tintColor = .systemIndigo
         
         // Configure the side menu
         menuNavController.leftSide = true
@@ -121,6 +123,7 @@ class MainTabBarController: UITabBarController {
         
         // Set as the left menu
         SideMenuManager.default.leftMenuNavigationController = menuNavController
+        SideMenuManager.default.leftMenuNavigationController?.view.tintColor = .systemIndigo
         
         // Enable gestures
         SideMenuManager.default.addPanGestureToPresent(toView: view)

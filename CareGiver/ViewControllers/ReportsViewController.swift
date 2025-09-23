@@ -52,6 +52,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
     private func setupUI() {
         title = "Reports"
         view.backgroundColor = .systemGroupedBackground
+        navigationController?.navigationBar.tintColor = .systemIndigo
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .add,
@@ -205,7 +206,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
             tableView.reloadRows(at: [indexPath], with: .automatic)
             completion(true)
         }
-        review.backgroundColor = .systemBlue
+        review.backgroundColor = .systemIndigo
 
         return UISwipeActionsConfiguration(actions: [delete, review])
     }
@@ -247,6 +248,7 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        navigationController?.navigationBar.tintColor = .systemIndigo
         setupUI()
     }
 
@@ -330,3 +332,4 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
         }
     }
 }
+

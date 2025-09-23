@@ -121,7 +121,9 @@ class HomeViewController: UIViewController {
         patientTabsStackView.axis = .horizontal
         patientTabsStackView.spacing = 8
         patientTabsStackView.alignment = .fill
-        patientTabsStackView.distribution = .fillEqually
+        patientTabsStackView.distribution = .equalSpacing
+        patientTabsStackView.isLayoutMarginsRelativeArrangement = true
+        patientTabsStackView.layoutMargins = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
         patientTabsStackView.translatesAutoresizingMaskIntoConstraints = false
         
         patientTabsScrollView.addSubview(patientTabsStackView)
@@ -155,11 +157,12 @@ class HomeViewController: UIViewController {
             patientTabsScrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             patientTabsScrollView.heightAnchor.constraint(equalToConstant: 44),
             
-            patientTabsStackView.topAnchor.constraint(equalTo: patientTabsScrollView.topAnchor),
-            patientTabsStackView.leadingAnchor.constraint(equalTo: patientTabsScrollView.leadingAnchor),
-            patientTabsStackView.trailingAnchor.constraint(equalTo: patientTabsScrollView.trailingAnchor),
-            patientTabsStackView.bottomAnchor.constraint(equalTo: patientTabsScrollView.bottomAnchor),
-            patientTabsStackView.heightAnchor.constraint(equalTo: patientTabsScrollView.heightAnchor)
+            patientTabsStackView.topAnchor.constraint(equalTo: patientTabsScrollView.contentLayoutGuide.topAnchor),
+            patientTabsStackView.bottomAnchor.constraint(equalTo: patientTabsScrollView.contentLayoutGuide.bottomAnchor),
+            patientTabsStackView.centerXAnchor.constraint(equalTo: patientTabsScrollView.frameLayoutGuide.centerXAnchor),
+            patientTabsStackView.leadingAnchor.constraint(greaterThanOrEqualTo: patientTabsScrollView.contentLayoutGuide.leadingAnchor),
+            patientTabsStackView.trailingAnchor.constraint(lessThanOrEqualTo: patientTabsScrollView.contentLayoutGuide.trailingAnchor),
+            patientTabsStackView.heightAnchor.constraint(equalTo: patientTabsScrollView.frameLayoutGuide.heightAnchor)
         ])
     }
     
@@ -232,7 +235,7 @@ class HomeViewController: UIViewController {
             upcomingTasksLabel = UILabel()
             upcomingTasksLabel.text = "Upcoming Tasks"
             upcomingTasksLabel.font = UIFont.boldSystemFont(ofSize: 24)
-            upcomingTasksLabel.textColor = .label
+            upcomingTasksLabel.textColor = .systemIndigo
             upcomingTasksLabel.translatesAutoresizingMaskIntoConstraints = false
             
             // Tasks stack view
@@ -298,8 +301,12 @@ class HomeViewController: UIViewController {
     
     private func createPatientInfoView(for patient: Patient) -> UIView {
             let containerView = UIView()
-            containerView.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.95)
+            containerView.backgroundColor = .white
             containerView.layer.cornerRadius = 12
+            containerView.layer.shadowColor = UIColor.black.cgColor
+            containerView.layer.shadowOpacity = 0.1
+            containerView.layer.shadowOffset = CGSize(width: 0, height: 2)
+            containerView.layer.shadowRadius = 4
             containerView.translatesAutoresizingMaskIntoConstraints = false
             
             let stackView = UIStackView()
@@ -313,17 +320,17 @@ class HomeViewController: UIViewController {
             let lastName = patient.lastName ?? ""
             nameLabel.text = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
             nameLabel.font = UIFont.boldSystemFont(ofSize: 20)
-            nameLabel.textColor = .white
+            nameLabel.textColor = .systemIndigo
             
             let emailLabel = UILabel()
             emailLabel.text = "Email: \(patient.email ?? "N/A")"
             emailLabel.font = UIFont.systemFont(ofSize: 16)
-            emailLabel.textColor = .white
+            emailLabel.textColor = .label
             
             let phoneLabel = UILabel()
             phoneLabel.text = "Phone: \(patient.phoneNumber ?? "N/A")"
             phoneLabel.font = UIFont.systemFont(ofSize: 16)
-            phoneLabel.textColor = .white
+            phoneLabel.textColor = .label
             
             let dobLabel = UILabel()
             if let dob = patient.dateOfBirth {
@@ -334,18 +341,18 @@ class HomeViewController: UIViewController {
                 dobLabel.text = "Date of Birth: N/A"
             }
             dobLabel.font = UIFont.systemFont(ofSize: 16)
-            dobLabel.textColor = .white
+            dobLabel.textColor = .label
             
             let veteranLabel = UILabel()
             veteranLabel.text = "Veteran Status: \(patient.veteranStatus ? "Yes" : "No")"
             veteranLabel.font = UIFont.systemFont(ofSize: 16)
-            veteranLabel.textColor = .white
+            veteranLabel.textColor = .label
             
             // Simplified income range access - just use the property directly
             let incomeLabel = UILabel()
             incomeLabel.text = "Income Range: \(patient.incomeRange ?? "N/A")"
             incomeLabel.font = UIFont.systemFont(ofSize: 16)
-            incomeLabel.textColor = .white
+            incomeLabel.textColor = .label
             
             // Debug: Print patient data to see what's actually there
             print("=== Patient Debug Info ===")
@@ -379,7 +386,7 @@ class HomeViewController: UIViewController {
     
     private func createTaskBox(title: String, description: String) -> UIView {
         let box = UIView()
-        box.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.95)
+        box.backgroundColor = .white
         box.layer.cornerRadius = 12
         box.layer.shadowColor = UIColor.black.cgColor
         box.layer.shadowOpacity = 0.1
@@ -390,12 +397,12 @@ class HomeViewController: UIViewController {
         let titleLabel = UILabel()
         titleLabel.text = title
         titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
-        titleLabel.textColor = .white
+        titleLabel.textColor = .systemIndigo
         
         let descLabel = UILabel()
         descLabel.text = description
         descLabel.font = UIFont.systemFont(ofSize: 14)
-        descLabel.textColor = .white
+        descLabel.textColor = .label
         descLabel.numberOfLines = 0
         
         let stackView = UIStackView(arrangedSubviews: [titleLabel, descLabel])
@@ -702,3 +709,4 @@ class AddPatientViewController: UIViewController {
         present(alert, animated: true)
     }
 }
+
