@@ -11,10 +11,6 @@ class SettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        // Only apply an override if the user has explicitly set a preference; otherwise, follow system
-        if UserDefaults.standard.object(forKey: darkModeDefaultsKey) != nil {
-            applyAppAppearance(dark: UserDefaults.standard.bool(forKey: darkModeDefaultsKey))
-        }
     }
     
     private func setupUI() {
@@ -152,16 +148,12 @@ class SettingsViewController: UIViewController {
     }
 
     private func fetchPatientsForDeletion() -> [Patient] {
-        // Prefer caregiver's patients if available; otherwise, fetch all
-        if let caregiver = getCurrentCaregiver(), let set = caregiver.patients as? Set<Patient>, !set.isEmpty {
+        if let caregiver = getCurrentCaregiver(), let set = caregiver.patients as? Set<Patient> {
             return set.sorted { (a, b) in
                 (a.firstName ?? "") < (b.firstName ?? "")
             }
         }
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return [] }
-        let context = appDelegate.persistentContainer.viewContext
-        let request: NSFetchRequest<Patient> = Patient.fetchRequest()
-        do { return try context.fetch(request) } catch { return [] }
+        return []
     }
 
     private func deletePatient(_ patient: Patient) {

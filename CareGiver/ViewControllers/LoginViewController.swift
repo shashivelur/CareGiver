@@ -59,6 +59,18 @@ class LoginViewController: UIViewController {
                 // Save the logged-in username to UserDefaults
                 UserDefaults.standard.set(username, forKey: "LoggedInUsername")
                 UserDefaults.standard.synchronize()
+                
+                // Notify the app to refresh any visible headers/profile views and allow SceneDelegate to sync legacy key first
+                NotificationCenter.default.post(name: .SessionChanged, object: nil)
+                
+                // Optional: keep legacy global image mirrored to the current user for backward compatibility
+                let defaults = UserDefaults.standard
+                let namespacedKey = "CaregiverProfileImageData_\(username)"
+                if let perUserData = defaults.data(forKey: namespacedKey) {
+                    // Ensure global mirrors the current user's photo for backward compatibility
+                    defaults.set(perUserData, forKey: "CaregiverProfileImageData")
+                }
+                
                 return true
             }
             return false
@@ -74,3 +86,4 @@ class LoginViewController: UIViewController {
         present(alert, animated: true)
     }
 }
+

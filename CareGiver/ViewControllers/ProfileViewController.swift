@@ -15,6 +15,7 @@ class ProfileViewController: UIViewController {
         setupUI()
         populateUserInfo()
         NotificationCenter.default.addObserver(self, selector: #selector(profilePhotoUpdated), name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: NSNotification.Name("SessionChanged"), object: nil)
         loadProfileImageFromDefaults()
     }
     
@@ -164,11 +165,23 @@ class ProfileViewController: UIViewController {
     }
     
     private func loadProfileImageFromDefaults() {
-        if let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData"),
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername"),
+           let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData_\(username)"),
            let image = UIImage(data: data) {
             self.profileImageView.image = image
             self.profileImageView.tintColor = nil
             self.profileImageView.contentMode = .scaleAspectFill
+        } else if let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData"),
+                  let image = UIImage(data: data) {
+            // Legacy fallback
+            self.profileImageView.image = image
+            self.profileImageView.tintColor = nil
+            self.profileImageView.contentMode = .scaleAspectFill
+        } else {
+            // Default system placeholder
+            self.profileImageView.image = UIImage(systemName: "person.crop.circle.fill")
+            self.profileImageView.tintColor = .systemIndigo
+            self.profileImageView.contentMode = .scaleAspectFit
         }
     }
     
@@ -277,16 +290,24 @@ class ProfileViewController: UIViewController {
     private func getPatientsCount() -> Int {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return 0 }
         let context = appDelegate.persistentContainer.viewContext
-        
-        let request: NSFetchRequest<Patient> = Patient.fetchRequest()
-        
-        do {
-            let patients = try context.fetch(request)
-            return patients.count
-        } catch {
-            print("Error fetching patients count: \(error)")
-            return 0
+
+        // Determine the current caregiver by LoggedInUsername
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername") {
+            let caregiverRequest: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+            caregiverRequest.predicate = NSPredicate(format: "username == %@", username)
+            caregiverRequest.fetchLimit = 1
+            do {
+                if let caregiver = try context.fetch(caregiverRequest).first {
+                    let request: NSFetchRequest<Patient> = Patient.fetchRequest()
+                    request.predicate = NSPredicate(format: "caregiver == %@", caregiver)
+                    return try context.fetch(request).count
+                }
+            } catch {
+                print("Error fetching patients count: \(error)")
+                return 0
+            }
         }
+        return 0
     }
     
     @objc private func backButtonTapped() {
@@ -299,8 +320,12 @@ class ProfileViewController: UIViewController {
         }
     }
     
+    @objc private func sessionChanged() {
+        loadCurrentCaregiver()
+        populateUserInfo()
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
 }
-
