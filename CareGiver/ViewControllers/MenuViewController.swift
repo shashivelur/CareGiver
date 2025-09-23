@@ -63,7 +63,7 @@ class MenuViewController: UIViewController {
     }
     
     private func setupHeaderView() {
-        headerView.backgroundColor = .systemBlue
+        headerView.backgroundColor = .systemIndigo
         
         // Change this line to use a custom image
         profileImageView.image = UIImage(named: "ProfilePhoto") // Replace with your image name
@@ -202,7 +202,7 @@ extension MenuViewController: UITableViewDataSource {
         cell.textLabel?.text = menuItem.title
         cell.textLabel?.font = UIFont.systemFont(ofSize: 16)
         cell.imageView?.image = UIImage(systemName: menuItem.icon)
-        cell.imageView?.tintColor = .systemBlue
+        cell.imageView?.tintColor = .systemIndigo
         cell.accessoryType = .disclosureIndicator
         cell.backgroundColor = .systemBackground
         
@@ -224,3 +224,4 @@ extension MenuViewController: UITableViewDelegate {
         return 60
     }
 }
+

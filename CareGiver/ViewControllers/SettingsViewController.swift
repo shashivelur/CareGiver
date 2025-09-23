@@ -20,6 +20,7 @@ class SettingsViewController: UIViewController {
             target: self,
             action: #selector(backButtonTapped)
         )
+        navigationController?.navigationBar.tintColor = .systemIndigo
         
         // Create settings UI
         let tableView = UITableView(frame: .zero, style: .grouped)
@@ -106,7 +107,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         }
         
         cell.accessoryType = .disclosureIndicator
-        cell.imageView?.tintColor = .systemBlue
+        cell.imageView?.tintColor = .systemIndigo
         
         return cell
     }
