@@ -14,6 +14,8 @@ class ProfileViewController: UIViewController {
         loadCurrentCaregiver()
         setupUI()
         populateUserInfo()
+        NotificationCenter.default.addObserver(self, selector: #selector(profilePhotoUpdated), name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+        loadProfileImageFromDefaults()
     }
     
     private func loadCurrentCaregiver() {
@@ -111,15 +113,16 @@ class ProfileViewController: UIViewController {
         profileImageView = UIImageView()
         
         // Configure the image view
-        profileImageView.image = UIImage(named: "ProfilePhoto") // Replace with your image name
-        profileImageView.tintColor = nil // Remove tint for custom images
-        profileImageView.contentMode = .scaleAspectFill // Better for photos
+        profileImageView.image = UIImage(systemName: "person.crop.circle.fill")
+        profileImageView.tintColor = .systemIndigo
+        profileImageView.contentMode = .scaleAspectFit
         profileImageView.layer.cornerRadius = 60 // Make it circular (half of 120)
         profileImageView.clipsToBounds = true // Clip to circular shape
         profileImageView.translatesAutoresizingMaskIntoConstraints = false // Required for Auto Layout
         
         // Add to the view hierarchy
         contentView.addSubview(profileImageView)
+        loadProfileImageFromDefaults()
     }
     
     private func setupStackView() {
@@ -158,6 +161,15 @@ class ProfileViewController: UIViewController {
             stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30)
         ])
+    }
+    
+    private func loadProfileImageFromDefaults() {
+        if let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData"),
+           let image = UIImage(data: data) {
+            self.profileImageView.image = image
+            self.profileImageView.tintColor = nil
+            self.profileImageView.contentMode = .scaleAspectFill
+        }
     }
     
     private func populateUserInfo() {
@@ -280,4 +292,15 @@ class ProfileViewController: UIViewController {
     @objc private func backButtonTapped() {
         navigationController?.popViewController(animated: true)
     }
+    
+    @objc private func profilePhotoUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadProfileImageFromDefaults()
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 }
+

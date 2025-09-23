@@ -47,6 +47,8 @@ class MenuViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         loadCurrentCaregiver()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(profilePhotoUpdated), name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -65,10 +67,10 @@ class MenuViewController: UIViewController {
     private func setupHeaderView() {
         headerView.backgroundColor = .systemIndigo
         
-        // Change this line to use a custom image
-        profileImageView.image = UIImage(named: "ProfilePhoto") // Replace with your image name
-        profileImageView.tintColor = nil // Remove tint for custom images
-        profileImageView.contentMode = .scaleAspectFill // Better for photos
+        // Updated profile image configuration
+        profileImageView.image = UIImage(systemName: "person.crop.circle.fill")
+        profileImageView.tintColor = .systemIndigo
+        profileImageView.contentMode = .scaleAspectFit
         profileImageView.layer.cornerRadius = 30 // Make it circular (half of width/height)
         profileImageView.clipsToBounds = true // Clip to circular shape
         
@@ -89,6 +91,9 @@ class MenuViewController: UIViewController {
         headerView.addSubview(profileImageView)
         headerView.addSubview(nameLabel)
         headerView.addSubview(emailLabel)
+        
+        loadProfileImageFromDefaults()
+        
         view.addSubview(headerView)
     }
     
@@ -187,6 +192,26 @@ class MenuViewController: UIViewController {
             }
         }
     }
+    
+    private func loadProfileImageFromDefaults() {
+        if let data = UserDefaults.standard.data(forKey: "CaregiverProfileImageData"),
+           let image = UIImage(data: data) {
+            self.profileImageView.image = image
+            self.profileImageView.tintColor = nil
+            self.profileImageView.contentMode = .scaleAspectFill
+            self.profileImageView.clipsToBounds = true
+        }
+    }
+    
+    @objc private func profilePhotoUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadProfileImageFromDefaults()
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -224,4 +249,3 @@ extension MenuViewController: UITableViewDelegate {
         return 60
     }
 }
-
