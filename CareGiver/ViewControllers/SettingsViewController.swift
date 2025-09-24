@@ -91,8 +91,21 @@ class SettingsViewController: UIViewController {
     }
     
     private func saveProfileImage(_ image: UIImage) {
-        if let data = image.jpegData(compressionQuality: 0.9) {
-            UserDefaults.standard.set(data, forKey: "CaregiverProfileImageData")
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername") {
+            // Save per-user and mirror to legacy global for backward compatibility
+            ProfileImageStore.save(image, for: username)
+            if let data = image.jpegData(compressionQuality: 0.9) {
+                UserDefaults.standard.set(data, forKey: "CaregiverProfileImageData")
+            }
+            // Notify interested views and trigger session sync
+            NotificationCenter.default.post(name: .SessionChanged, object: nil)
+            NotificationCenter.default.post(name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+        } else {
+            // Fallback: save to legacy key if no username is available
+            if let data = image.jpegData(compressionQuality: 0.9) {
+                UserDefaults.standard.set(data, forKey: "CaregiverProfileImageData")
+            }
+            NotificationCenter.default.post(name: .SessionChanged, object: nil)
             NotificationCenter.default.post(name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
         }
     }
@@ -255,8 +268,8 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             if defaults.object(forKey: darkModeDefaultsKey) != nil {
                 toggle.isOn = defaults.bool(forKey: darkModeDefaultsKey)
             } else {
-                // No saved preference yet — reflect current system appearance
-                toggle.isOn = (traitCollection.userInterfaceStyle == .dark)
+                // Default to off on first launch
+                toggle.isOn = false
             }
             toggle.onTintColor = .systemIndigo
             toggle.addTarget(self, action: #selector(darkModeSwitchChanged(_:)), for: .valueChanged)
@@ -453,6 +466,22 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             // Update UserDefaults with new username
             UserDefaults.standard.set(newUsername, forKey: "LoggedInUsername")
             UserDefaults.standard.synchronize()
+            
+            // Migrate per-user profile photo key from old username to new username and mirror legacy key
+            let defaults = UserDefaults.standard
+            if let old = oldUsername, !old.isEmpty {
+                let oldKey = "CaregiverProfileImageData_\(old)"
+                let newKey = "CaregiverProfileImageData_\(newUsername)"
+                if let data = defaults.data(forKey: oldKey) {
+                    defaults.set(data, forKey: newKey)
+                    defaults.set(data, forKey: "CaregiverProfileImageData")
+                    defaults.removeObject(forKey: oldKey)
+                } else if let global = defaults.data(forKey: "CaregiverProfileImageData") {
+                    defaults.set(global, forKey: newKey)
+                }
+            }
+            // Notify session change so UI can refresh and SceneDelegate can sync
+            NotificationCenter.default.post(name: .SessionChanged, object: nil)
             
             showAlert(message: "Username changed successfully!")
             print("Username updated from '\(oldUsername ?? "unknown")' to '\(newUsername)'")
@@ -892,4 +921,3 @@ final class EditPatientViewController: UIViewController {
         scrollView.scrollIndicatorInsets.bottom = 0
     }
 }
-
