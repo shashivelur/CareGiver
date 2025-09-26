@@ -8,6 +8,7 @@
 import UIKit
 import CoreData
 import CryptoKit
+import LocalAuthentication
 
 
 class RegisterStep1ViewController: UIViewController {
@@ -19,6 +20,8 @@ class RegisterStep1ViewController: UIViewController {
     @IBOutlet weak var phoneNumberTextField: UITextField!
     @IBOutlet weak var birthdayDatePicker: UIDatePicker!
     @IBOutlet weak var nextButton: UIButton!
+    
+    private let faceIDOptInKeyPrefix = "BiometricEnabled_"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -64,6 +67,10 @@ class RegisterStep1ViewController: UIViewController {
             print("Username: \(c.username ?? "nil"), Password: \(c.password ?? "nil")")
         }
 
+        // Offer Face ID enablement (Option A: biometric token)
+        if let username = usernameTextField.text as String? {
+            self.offerFaceIDEnablement(for: username)
+        }
         
         self.performSegue(withIdentifier: "toMainPage", sender: self)
     }
@@ -131,6 +138,27 @@ class RegisterStep1ViewController: UIViewController {
         print("Caregiver saved successfully!")
     }
     
+    private func offerFaceIDEnablement(for username: String) {
+        let (available, type) = BiometricAuthManager.isBiometryAvailable()
+        guard available else { return }
+
+        let typeName = (type == .faceID) ? "Face ID" : (type == .touchID ? "Touch ID" : "Biometrics")
+        let alert = UIAlertController(title: typeName,
+                                      message: "Use \(typeName) to sign in faster?",
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Not Now", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Enable", style: .default, handler: { _ in
+            BiometricAuthManager.enableBiometricLogin(for: username, presenting: self, reason: "Authenticate to enable \(typeName)") { result in
+                switch result {
+                case .success:
+                    print("✅ Biometric login enabled for \(username)")
+                case .failure(let error):
+                    print("❌ Failed to enable biometrics: \(error)")
+                }
+            }
+        }))
+        present(alert, animated: true)
+    }
     
     func printAllUserProfiles() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
