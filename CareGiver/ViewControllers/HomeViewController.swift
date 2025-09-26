@@ -16,6 +16,7 @@ class HomeViewController: UIViewController {
     private var patientTabsStackView: UIStackView!
     private var selectedPatientIndex = 0
     private var patients: [Patient] = []
+    private var defaultViewHeightConstraint: NSLayoutConstraint?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -236,9 +237,15 @@ class HomeViewController: UIViewController {
             defaultMessageLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             defaultMessageLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             defaultMessageLabel.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: 20),
-            defaultMessageLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20),
-            contentView.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor)
+            defaultMessageLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20)
         ])
+        
+        // Ensure the contentView is at least as tall as the visible area, but allow it to grow when needed
+        defaultViewHeightConstraint?.isActive = false
+        let minHeight = contentView.heightAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.heightAnchor)
+        minHeight.priority = UILayoutPriority(999)
+        minHeight.isActive = true
+        defaultViewHeightConstraint = minHeight
     }
     
     private func showPatientHomeView() {
@@ -330,10 +337,10 @@ class HomeViewController: UIViewController {
                 mapView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
             ])
             
-            // Force layout update
+            // Force layout update without manually overriding contentSize; Auto Layout will determine it
             DispatchQueue.main.async {
+                self.view.setNeedsLayout()
                 self.view.layoutIfNeeded()
-                self.scrollView.contentSize = CGSize(width: self.contentView.frame.width, height: self.contentView.frame.height)
             }
         }
     
@@ -491,6 +498,9 @@ class HomeViewController: UIViewController {
     }
     
     private func clearContentView() {
+        // Deactivate any default view height constraint so patient layout can expand naturally
+        defaultViewHeightConstraint?.isActive = false
+        defaultViewHeightConstraint = nil
         contentView.subviews.forEach { $0.removeFromSuperview() }
     }
     
