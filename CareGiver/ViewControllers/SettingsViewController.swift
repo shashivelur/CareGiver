@@ -2,6 +2,7 @@ import UIKit
 import CoreData
 import CryptoKit
 import PhotosUI
+import LocalAuthentication
 
 class SettingsViewController: UIViewController {
     
@@ -206,6 +207,40 @@ class SettingsViewController: UIViewController {
         }
         present(pickerVC, animated: true)
     }
+    
+    @objc private func faceIDSwitchChanged(_ sender: UISwitch) {
+        // Resolve current username
+        let defaults = UserDefaults.standard
+        guard let username = (getCurrentCaregiver()?.username) ?? defaults.string(forKey: "LoggedInUsername"), !username.isEmpty else {
+            sender.setOn(false, animated: true)
+            showAlert(message: "Please sign in to manage Face ID.")
+            return
+        }
+
+        let (available, type) = BiometricAuthManager.isBiometryAvailable()
+        guard available else {
+            sender.setOn(false, animated: true)
+            showAlert(message: "Face ID/Touch ID is not available on this device.")
+            return
+        }
+
+        if sender.isOn {
+            let typeName = (type == .faceID) ? "Face ID" : (type == .touchID ? "Touch ID" : "Biometrics")
+            BiometricAuthManager.enableBiometricLogin(for: username, presenting: self, reason: "Authenticate to enable \(typeName)") { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        break
+                    case .failure(let error):
+                        sender.setOn(false, animated: true)
+                        self?.showAlert(message: "Could not enable Face ID: \(error.localizedDescription)")
+                    }
+                }
+            }
+        } else {
+            BiometricAuthManager.disableBiometricLogin(for: username)
+        }
+    }
 }
 
 extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
@@ -218,7 +253,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         switch section {
         case 0: return 3 // Account Settings: Change Password, Change Username, Edit Profile Photo
         case 1: return 2 // Patient Settings: Edit Patient, Delete Patient
-        case 2: return 1 // App Settings: Dark Mode
+        case 2: return 2 // App Settings: Dark Mode, Face ID Sign-In
         default: return 0
         }
     }
@@ -261,19 +296,48 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                 break
             }
         } else if indexPath.section == 2 {
-            cell.textLabel?.text = "Dark Mode"
+            // App Settings
             cell.imageView?.image = nil
-            let toggle = UISwitch()
-            let defaults = UserDefaults.standard
-            if defaults.object(forKey: darkModeDefaultsKey) != nil {
-                toggle.isOn = defaults.bool(forKey: darkModeDefaultsKey)
+            if indexPath.row == 0 {
+                // Dark Mode toggle
+                cell.textLabel?.text = "Dark Mode"
+                let toggle = UISwitch()
+                let defaults = UserDefaults.standard
+                if defaults.object(forKey: darkModeDefaultsKey) != nil {
+                    toggle.isOn = defaults.bool(forKey: darkModeDefaultsKey)
+                } else {
+                    // Derive initial state from current interface style when no preference is stored yet
+                    let currentStyle = (self.view.window?.traitCollection.userInterfaceStyle ?? self.traitCollection.userInterfaceStyle)
+                    toggle.isOn = (currentStyle == .dark)
+                }
+                toggle.onTintColor = .systemIndigo
+                toggle.addTarget(self, action: #selector(darkModeSwitchChanged(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
             } else {
-                // Default to off on first launch
-                toggle.isOn = false
+                // Face ID Sign-In toggle
+                cell.textLabel?.text = "Face ID Sign-In"
+                let faceToggle = UISwitch()
+                faceToggle.onTintColor = .systemIndigo
+
+                // Determine current username
+                let defaults = UserDefaults.standard
+                let currentUsername: String = (getCurrentCaregiver()?.username) ?? defaults.string(forKey: "LoggedInUsername") ?? ""
+
+                let (available, _) = BiometricAuthManager.isBiometryAvailable()
+                if !currentUsername.isEmpty {
+                    let enabled = defaults.bool(forKey: "BiometricEnabled_\(currentUsername)")
+                    faceToggle.isOn = enabled
+                    faceToggle.isEnabled = available
+                } else {
+                    faceToggle.isOn = false
+                    faceToggle.isEnabled = false
+                }
+
+                faceToggle.addTarget(self, action: #selector(faceIDSwitchChanged(_:)), for: .valueChanged)
+                faceToggle.accessibilityIdentifier = "FaceIDToggle"
+                cell.accessoryView = faceToggle
+                cell.selectionStyle = .none
             }
-            toggle.onTintColor = .systemIndigo
-            toggle.addTarget(self, action: #selector(darkModeSwitchChanged(_:)), for: .valueChanged)
-            cell.accessoryView = toggle
         }
         
         if indexPath.section == 2 {
@@ -466,6 +530,11 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             // Update UserDefaults with new username
             UserDefaults.standard.set(newUsername, forKey: "LoggedInUsername")
             UserDefaults.standard.synchronize()
+            
+            // Migrate biometric credentials (if enabled)
+            if let old = oldUsername, !old.isEmpty {
+                BiometricAuthManager.migrateBiometricCredentials(from: old, to: newUsername)
+            }
             
             // Migrate per-user profile photo key from old username to new username and mirror legacy key
             let defaults = UserDefaults.standard
@@ -921,3 +990,4 @@ final class EditPatientViewController: UIViewController {
         scrollView.scrollIndicatorInsets.bottom = 0
     }
 }
+

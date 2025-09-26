@@ -1,14 +1,45 @@
 import UIKit
 import CoreData
 import CryptoKit  // Add this import
+import LocalAuthentication
 
 class LoginViewController: UIViewController {
     
     @IBOutlet weak var usernameTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
+    @IBOutlet weak var faceIDButton: UIButton?
+    
+    private var didAttemptAutoBiometric = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        faceIDButton?.isHidden = true
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        autoPromptBiometricIfAvailable()
+    }
+    
+    private func autoPromptBiometricIfAvailable() {
+        // Ensure we only prompt once per appearance
+        guard !didAttemptAutoBiometric else { return }
+        didAttemptAutoBiometric = true
+
+        // Prefer typed username; otherwise use last biometric username
+        let typed = usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let candidate = !typed.isEmpty ? typed : (UserDefaults.standard.string(forKey: "LastBiometricUsername") ?? "")
+        guard !candidate.isEmpty else { return }
+
+        let (available, _) = BiometricAuthManager.isBiometryAvailable()
+        let enabled = UserDefaults.standard.bool(forKey: "BiometricEnabled_\(candidate)")
+        guard available && enabled else { return }
+
+        // Only auto-prompt if password fields are empty to avoid interrupting manual entry
+        if (usernameTextField.text?.isEmpty ?? true) || (passwordTextField.text?.isEmpty ?? true) {
+            attemptFaceIDLogin(for: candidate)
+        }
     }
     
     @IBAction func loginButtonPressed(_ sender: UIButton) {
@@ -25,6 +56,17 @@ class LoginViewController: UIViewController {
             // ❌ Failure
             showAlert(message: "Invalid username or password")
         }
+    }
+    
+    @IBAction func faceIDLoginTapped(_ sender: UIButton) {
+        // Determine which username to use. If a username is typed, use it; else use last biometric username.
+        let typed = usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let username = !typed.isEmpty ? typed : (UserDefaults.standard.string(forKey: "LastBiometricUsername") ?? "")
+        guard !username.isEmpty else {
+            showAlert(message: "Please enter your username first to use Face ID")
+            return
+        }
+        attemptFaceIDLogin(for: username)
     }
     
     // Add the sha256 function (same as in RegisterStep1ViewController)
@@ -80,10 +122,42 @@ class LoginViewController: UIViewController {
         }
     }
     
+    private func configureFaceIDAvailability(for username: String) {
+        let (available, _) = BiometricAuthManager.isBiometryAvailable()
+        let enabled = UserDefaults.standard.bool(forKey: "BiometricEnabled_\(username)")
+        let shouldShow = available && enabled
+        faceIDButton?.isHidden = !shouldShow
+
+        // Optional: auto-prompt when arriving on this screen if we have both username and Face ID enabled
+        if shouldShow {
+            // Do not auto-prompt if user is actively typing
+            if (usernameTextField.text?.isEmpty ?? true) && (passwordTextField.text?.isEmpty ?? true) {
+                attemptFaceIDLogin(for: username)
+            }
+        }
+    }
+    
+    private func attemptFaceIDLogin(for username: String) {
+        BiometricAuthManager.tryBiometricLogin(for: username, presenting: self, reason: "Authenticate to sign in") { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success:
+                // On success, set session and segue
+                UserDefaults.standard.set(username, forKey: "LoggedInUsername")
+                UserDefaults.standard.synchronize()
+                NotificationCenter.default.post(name: .SessionChanged, object: nil)
+                self.performSegue(withIdentifier: "toHomePageFromLogin", sender: self)
+            case .failure(let error):
+                // If failed due to not enabled or mismatch, show message and keep password flow
+                print("Biometric login failed: \(error.localizedDescription)")
+                // Optionally present a gentle message
+            }
+        }
+    }
+    
     func showAlert(message: String) {
         let alert = UIAlertController(title: "Login", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }
-
