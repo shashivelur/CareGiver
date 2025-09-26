@@ -162,12 +162,24 @@ class SettingsViewController: UIViewController {
     }
 
     private func fetchPatientsForDeletion() -> [Patient] {
-        if let caregiver = getCurrentCaregiver(), let set = caregiver.patients as? Set<Patient> {
-            return set.sorted { (a, b) in
-                (a.firstName ?? "") < (b.firstName ?? "")
-            }
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return [] }
+        let context = appDelegate.persistentContainer.viewContext
+        
+        guard let caregiver = getCurrentCaregiver() else { return [] }
+        
+        let request: NSFetchRequest<Patient> = Patient.fetchRequest()
+        request.predicate = NSPredicate(format: "caregiver == %@", caregiver)
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "firstName", ascending: true),
+            NSSortDescriptor(key: "lastName", ascending: true)
+        ]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error loading patients for settings: \(error)")
+            return []
         }
-        return []
     }
 
     private func deletePatient(_ patient: Patient) {
