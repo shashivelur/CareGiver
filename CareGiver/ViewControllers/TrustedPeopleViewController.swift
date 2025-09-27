@@ -56,8 +56,8 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
     private let addFromContactsButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Add From Contacts", for: .normal)
-        b.backgroundColor = .systemGreen
-        b.setTitleColor(.white, for: .normal)
+        b.backgroundColor = Theme.unselectedTabBackground
+        b.setTitleColor(.systemIndigo, for: .normal)
         b.layer.cornerRadius = 10
         b.translatesAutoresizingMaskIntoConstraints = false
         return b
@@ -66,7 +66,7 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
     private let addButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Add Trusted Person", for: .normal)
-        b.backgroundColor = .systemBlue
+        b.backgroundColor = .systemIndigo
         b.setTitleColor(.white, for: .normal)
         b.layer.cornerRadius = 10
         b.translatesAutoresizingMaskIntoConstraints = false
@@ -77,7 +77,7 @@ final class TrustedPeopleViewController: UIViewController, UITableViewDataSource
         let b = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 24, weight: .bold)
         b.setImage(UIImage(systemName: "chevron.left", withConfiguration: config), for: .normal)
-        b.tintColor = .systemBlue
+        b.tintColor = .systemIndigo
         b.translatesAutoresizingMaskIntoConstraints = false
         return b
     }()

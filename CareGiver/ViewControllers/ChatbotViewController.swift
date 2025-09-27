@@ -14,7 +14,7 @@ class ChatbotViewController: UIViewController, UITableViewDelegate, UITableViewD
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        view.backgroundColor = .systemBackground
         
         // Initialize ChatGPTAPI with your API key
         chatGPTAPI = ChatGPTAPI(apiKey: "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")
@@ -31,22 +31,27 @@ class ChatbotViewController: UIViewController, UITableViewDelegate, UITableViewD
         tableView.separatorStyle = .none
         tableView.allowsSelection = false
         tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.backgroundColor = .systemBackground
         view.addSubview(tableView)
     }
 
     private func setupInputComponents() {
-        messageInputContainer.backgroundColor = UIColor(white: 0.95, alpha: 1)
+        messageInputContainer.backgroundColor = .secondarySystemBackground
         messageInputContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(messageInputContainer)
 
         messageTextField.placeholder = "Type a message..."
         messageTextField.borderStyle = .roundedRect
         messageTextField.delegate = self
+        messageTextField.textColor = .label
+        messageTextField.backgroundColor = .tertiarySystemBackground
         messageTextField.translatesAutoresizingMaskIntoConstraints = false
         messageInputContainer.addSubview(messageTextField)
 
         sendButton.setTitle("Send", for: .normal)
         sendButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+        sendButton.tintColor = .systemBlue
+        sendButton.setTitleColor(.systemBlue, for: .normal)
         sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         messageInputContainer.addSubview(sendButton)
@@ -119,9 +124,13 @@ class ChatbotViewController: UIViewController, UITableViewDelegate, UITableViewD
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath)
         let message = messages[indexPath.row]
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
         cell.textLabel?.text = message.0
+        cell.textLabel?.textColor = .label
         cell.textLabel?.textAlignment = message.1 ? .right : .left
         cell.textLabel?.numberOfLines = 0
         return cell
     }
 }
+

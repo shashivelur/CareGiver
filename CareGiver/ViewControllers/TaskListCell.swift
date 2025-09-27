@@ -121,7 +121,7 @@ class TaskListCell: UITableViewCell {
         label.text = task
         label.numberOfLines = 0
         label.font = .systemFont(ofSize: 15)
-        label.textColor = .black
+        label.textColor = .label
         label.isUserInteractionEnabled = false // Prevent task completion on label tap
 
         let optionsButton = UIButton(type: .system)
@@ -180,3 +180,4 @@ class TaskListCell: UITableViewCell {
         }
     }
 }
+

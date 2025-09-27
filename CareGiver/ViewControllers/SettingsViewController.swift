@@ -2,6 +2,7 @@ import UIKit
 import CoreData
 import CryptoKit
 import PhotosUI
+import LocalAuthentication
 
 class SettingsViewController: UIViewController {
     
@@ -11,10 +12,6 @@ class SettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        // Only apply an override if the user has explicitly set a preference; otherwise, follow system
-        if UserDefaults.standard.object(forKey: darkModeDefaultsKey) != nil {
-            applyAppAppearance(dark: UserDefaults.standard.bool(forKey: darkModeDefaultsKey))
-        }
     }
     
     private func setupUI() {
@@ -95,8 +92,21 @@ class SettingsViewController: UIViewController {
     }
     
     private func saveProfileImage(_ image: UIImage) {
-        if let data = image.jpegData(compressionQuality: 0.9) {
-            UserDefaults.standard.set(data, forKey: "CaregiverProfileImageData")
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername") {
+            // Save per-user and mirror to legacy global for backward compatibility
+            ProfileImageStore.save(image, for: username)
+            if let data = image.jpegData(compressionQuality: 0.9) {
+                UserDefaults.standard.set(data, forKey: "CaregiverProfileImageData")
+            }
+            // Notify interested views and trigger session sync
+            NotificationCenter.default.post(name: .SessionChanged, object: nil)
+            NotificationCenter.default.post(name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+        } else {
+            // Fallback: save to legacy key if no username is available
+            if let data = image.jpegData(compressionQuality: 0.9) {
+                UserDefaults.standard.set(data, forKey: "CaregiverProfileImageData")
+            }
+            NotificationCenter.default.post(name: .SessionChanged, object: nil)
             NotificationCenter.default.post(name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
         }
     }
@@ -152,16 +162,24 @@ class SettingsViewController: UIViewController {
     }
 
     private func fetchPatientsForDeletion() -> [Patient] {
-        // Prefer caregiver's patients if available; otherwise, fetch all
-        if let caregiver = getCurrentCaregiver(), let set = caregiver.patients as? Set<Patient>, !set.isEmpty {
-            return set.sorted { (a, b) in
-                (a.firstName ?? "") < (b.firstName ?? "")
-            }
-        }
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return [] }
         let context = appDelegate.persistentContainer.viewContext
+        
+        guard let caregiver = getCurrentCaregiver() else { return [] }
+        
         let request: NSFetchRequest<Patient> = Patient.fetchRequest()
-        do { return try context.fetch(request) } catch { return [] }
+        request.predicate = NSPredicate(format: "caregiver == %@", caregiver)
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "firstName", ascending: true),
+            NSSortDescriptor(key: "lastName", ascending: true)
+        ]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error loading patients for settings: \(error)")
+            return []
+        }
     }
 
     private func deletePatient(_ patient: Patient) {
@@ -201,6 +219,40 @@ class SettingsViewController: UIViewController {
         }
         present(pickerVC, animated: true)
     }
+    
+    @objc private func faceIDSwitchChanged(_ sender: UISwitch) {
+        // Resolve current username
+        let defaults = UserDefaults.standard
+        guard let username = (getCurrentCaregiver()?.username) ?? defaults.string(forKey: "LoggedInUsername"), !username.isEmpty else {
+            sender.setOn(false, animated: true)
+            showAlert(message: "Please sign in to manage Face ID.")
+            return
+        }
+
+        let (available, type) = BiometricAuthManager.isBiometryAvailable()
+        guard available else {
+            sender.setOn(false, animated: true)
+            showAlert(message: "Face ID/Touch ID is not available on this device.")
+            return
+        }
+
+        if sender.isOn {
+            let typeName = (type == .faceID) ? "Face ID" : (type == .touchID ? "Touch ID" : "Biometrics")
+            BiometricAuthManager.enableBiometricLogin(for: username, presenting: self, reason: "Authenticate to enable \(typeName)") { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        break
+                    case .failure(let error):
+                        sender.setOn(false, animated: true)
+                        self?.showAlert(message: "Could not enable Face ID: \(error.localizedDescription)")
+                    }
+                }
+            }
+        } else {
+            BiometricAuthManager.disableBiometricLogin(for: username)
+        }
+    }
 }
 
 extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
@@ -213,7 +265,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         switch section {
         case 0: return 3 // Account Settings: Change Password, Change Username, Edit Profile Photo
         case 1: return 2 // Patient Settings: Edit Patient, Delete Patient
-        case 2: return 1 // App Settings: Dark Mode
+        case 2: return 2 // App Settings: Dark Mode, Face ID Sign-In
         default: return 0
         }
     }
@@ -256,19 +308,48 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                 break
             }
         } else if indexPath.section == 2 {
-            cell.textLabel?.text = "Dark Mode"
+            // App Settings
             cell.imageView?.image = nil
-            let toggle = UISwitch()
-            let defaults = UserDefaults.standard
-            if defaults.object(forKey: darkModeDefaultsKey) != nil {
-                toggle.isOn = defaults.bool(forKey: darkModeDefaultsKey)
+            if indexPath.row == 0 {
+                // Dark Mode toggle
+                cell.textLabel?.text = "Dark Mode"
+                let toggle = UISwitch()
+                let defaults = UserDefaults.standard
+                if defaults.object(forKey: darkModeDefaultsKey) != nil {
+                    toggle.isOn = defaults.bool(forKey: darkModeDefaultsKey)
+                } else {
+                    // Derive initial state from current interface style when no preference is stored yet
+                    let currentStyle = (self.view.window?.traitCollection.userInterfaceStyle ?? self.traitCollection.userInterfaceStyle)
+                    toggle.isOn = (currentStyle == .dark)
+                }
+                toggle.onTintColor = .systemIndigo
+                toggle.addTarget(self, action: #selector(darkModeSwitchChanged(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
             } else {
-                // No saved preference yet — reflect current system appearance
-                toggle.isOn = (traitCollection.userInterfaceStyle == .dark)
+                // Face ID Sign-In toggle
+                cell.textLabel?.text = "Face ID Sign-In"
+                let faceToggle = UISwitch()
+                faceToggle.onTintColor = .systemIndigo
+
+                // Determine current username
+                let defaults = UserDefaults.standard
+                let currentUsername: String = (getCurrentCaregiver()?.username) ?? defaults.string(forKey: "LoggedInUsername") ?? ""
+
+                let (available, _) = BiometricAuthManager.isBiometryAvailable()
+                if !currentUsername.isEmpty {
+                    let enabled = defaults.bool(forKey: "BiometricEnabled_\(currentUsername)")
+                    faceToggle.isOn = enabled
+                    faceToggle.isEnabled = available
+                } else {
+                    faceToggle.isOn = false
+                    faceToggle.isEnabled = false
+                }
+
+                faceToggle.addTarget(self, action: #selector(faceIDSwitchChanged(_:)), for: .valueChanged)
+                faceToggle.accessibilityIdentifier = "FaceIDToggle"
+                cell.accessoryView = faceToggle
+                cell.selectionStyle = .none
             }
-            toggle.onTintColor = .systemIndigo
-            toggle.addTarget(self, action: #selector(darkModeSwitchChanged(_:)), for: .valueChanged)
-            cell.accessoryView = toggle
         }
         
         if indexPath.section == 2 {
@@ -461,6 +542,27 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
             // Update UserDefaults with new username
             UserDefaults.standard.set(newUsername, forKey: "LoggedInUsername")
             UserDefaults.standard.synchronize()
+            
+            // Migrate biometric credentials (if enabled)
+            if let old = oldUsername, !old.isEmpty {
+                BiometricAuthManager.migrateBiometricCredentials(from: old, to: newUsername)
+            }
+            
+            // Migrate per-user profile photo key from old username to new username and mirror legacy key
+            let defaults = UserDefaults.standard
+            if let old = oldUsername, !old.isEmpty {
+                let oldKey = "CaregiverProfileImageData_\(old)"
+                let newKey = "CaregiverProfileImageData_\(newUsername)"
+                if let data = defaults.data(forKey: oldKey) {
+                    defaults.set(data, forKey: newKey)
+                    defaults.set(data, forKey: "CaregiverProfileImageData")
+                    defaults.removeObject(forKey: oldKey)
+                } else if let global = defaults.data(forKey: "CaregiverProfileImageData") {
+                    defaults.set(global, forKey: newKey)
+                }
+            }
+            // Notify session change so UI can refresh and SceneDelegate can sync
+            NotificationCenter.default.post(name: .SessionChanged, object: nil)
             
             showAlert(message: "Username changed successfully!")
             print("Username updated from '\(oldUsername ?? "unknown")' to '\(newUsername)'")

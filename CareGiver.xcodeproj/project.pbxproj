@@ -17,6 +17,7 @@
 		6111DB122E6DCF7600D0DE04 /* SideMenu in Frameworks */ = {isa = PBXBuildFile; productRef = 6111DB112E6DCF7600D0DE04 /* SideMenu */; };
 		6111DB152E765B3B00D0DE04 /* Patient+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */; };
 		6111DB162E765B3B00D0DE04 /* Patient+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */; };
+		615A4F802E838B2500451009 /* BiometricAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615A4F7F2E838B2500451009 /* BiometricAuthManager.swift */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		61A3FD072E81B3DF0054301E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A3FD062E81B3DF0054301E /* Theme.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
@@ -58,6 +59,7 @@
 		5CC275B72E526E95003408F7 /* MonthCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarView.swift; sourceTree = "<group>"; };
 		6111DB132E765B3B00D0DE04 /* Patient+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataClass.swift"; sourceTree = "<group>"; };
 		6111DB142E765B3B00D0DE04 /* Patient+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Patient+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		615A4F7F2E838B2500451009 /* BiometricAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthManager.swift; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
 		61A3FD062E81B3DF0054301E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 				A1B2C3D4E623 /* NotificationsViewController.swift */,
 				A1B2C3D4E625 /* ReportsViewController.swift */,
 				A1B2C3D4E627 /* HelpViewController.swift */,
+				615A4F7F2E838B2500451009 /* BiometricAuthManager.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -283,6 +286,7 @@
 				A1B2C3D4E614 /* SocialGroupsViewController.swift in Sources */,
 				A1B2C3D4E616 /* MenuViewController.swift in Sources */,
 				A1B2C3D4E618 /* ProfileViewController.swift in Sources */,
+				615A4F802E838B2500451009 /* BiometricAuthManager.swift in Sources */,
 				5CC275B02E526E5C003408F7 /* TaskListCell.swift in Sources */,
 				A1B2C3D4E620 /* SettingsViewController.swift in Sources */,
 				A1B2C3D4E622 /* NotificationsViewController.swift in Sources */,
@@ -452,10 +456,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 25P6Q23N4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CareGiver/Info.plist;
 				INFOPLIST_KEY_NSContactsUsageDescription = "This app needs access to your contacts to add trusted people.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to quickly and securely sign in.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -468,7 +473,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.CareGiver;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caregiverteam.CareGiver;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -483,10 +488,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 25P6Q23N4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CareGiver/Info.plist;
 				INFOPLIST_KEY_NSContactsUsageDescription = "This app needs access to your contacts to add trusted people.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to quickly and securely sign in.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -499,7 +505,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.CareGiver;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caregiverteam.CareGiver;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

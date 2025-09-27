@@ -16,6 +16,7 @@ class HomeViewController: UIViewController {
     private var patientTabsStackView: UIStackView!
     private var selectedPatientIndex = 0
     private var patients: [Patient] = []
+    private var defaultViewHeightConstraint: NSLayoutConstraint?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,6 +30,7 @@ class HomeViewController: UIViewController {
         
         // Listen for patient creation notifications
         NotificationCenter.default.addObserver(self, selector: #selector(patientCreated), name: NSNotification.Name("PatientCreated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: NSNotification.Name("SessionChanged"), object: nil)
     }
     
     
@@ -52,21 +54,42 @@ class HomeViewController: UIViewController {
         }
     }
     
+    @objc private func sessionChanged() {
+        selectedPatientIndex = 0
+        loadPatients()
+        checkPatientStatus()
+    }
+    
+    private func getCurrentCaregiver(context: NSManagedObjectContext) -> Caregiver? {
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername") {
+            let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+            request.predicate = NSPredicate(format: "username == %@", username)
+            request.fetchLimit = 1
+            do { return try context.fetch(request).first } catch { return nil }
+        }
+        return nil
+    }
+    
     private func loadPatients() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
-        
-        let request: NSFetchRequest<Patient> = Patient.fetchRequest()
-        
-        do {
-            patients = try context.fetch(request)
-            if patients.isEmpty {
+
+        if let caregiver = getCurrentCaregiver(context: context) {
+            let request: NSFetchRequest<Patient> = Patient.fetchRequest()
+            request.predicate = NSPredicate(format: "caregiver == %@", caregiver)
+            do {
+                patients = try context.fetch(request)
+                if patients.isEmpty {
+                    selectedPatientIndex = 0
+                } else if selectedPatientIndex >= patients.count {
+                    selectedPatientIndex = max(0, patients.count - 1)
+                }
+            } catch {
+                print("Error loading patients: \(error)")
+                patients = []
                 selectedPatientIndex = 0
-            } else if selectedPatientIndex >= patients.count {
-                selectedPatientIndex = max(0, patients.count - 1)
             }
-        } catch {
-            print("Error loading patients: \(error)")
+        } else {
             patients = []
             selectedPatientIndex = 0
         }
@@ -214,9 +237,15 @@ class HomeViewController: UIViewController {
             defaultMessageLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             defaultMessageLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             defaultMessageLabel.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: 20),
-            defaultMessageLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20),
-            contentView.heightAnchor.constraint(equalTo: view.safeAreaLayoutGuide.heightAnchor)
+            defaultMessageLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20)
         ])
+        
+        // Ensure the contentView is at least as tall as the visible area, but allow it to grow when needed
+        defaultViewHeightConstraint?.isActive = false
+        let minHeight = contentView.heightAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.heightAnchor)
+        minHeight.priority = UILayoutPriority(999)
+        minHeight.isActive = true
+        defaultViewHeightConstraint = minHeight
     }
     
     private func showPatientHomeView() {
@@ -308,10 +337,10 @@ class HomeViewController: UIViewController {
                 mapView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
             ])
             
-            // Force layout update
+            // Force layout update without manually overriding contentSize; Auto Layout will determine it
             DispatchQueue.main.async {
+                self.view.setNeedsLayout()
                 self.view.layoutIfNeeded()
-                self.scrollView.contentSize = CGSize(width: self.contentView.frame.width, height: self.contentView.frame.height)
             }
         }
     
@@ -469,6 +498,9 @@ class HomeViewController: UIViewController {
     }
     
     private func clearContentView() {
+        // Deactivate any default view height constraint so patient layout can expand naturally
+        defaultViewHeightConstraint?.isActive = false
+        defaultViewHeightConstraint = nil
         contentView.subviews.forEach { $0.removeFromSuperview() }
     }
     
@@ -723,9 +755,24 @@ class AddPatientViewController: UIViewController {
         savePatient()
     }
     
+    private func getCurrentCaregiver() -> Caregiver? {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return nil }
+        let context = appDelegate.persistentContainer.viewContext
+        guard let username = UserDefaults.standard.string(forKey: "LoggedInUsername") else { return nil }
+        let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+        request.predicate = NSPredicate(format: "username == %@", username)
+        request.fetchLimit = 1
+        do { return try context.fetch(request).first } catch { return nil }
+    }
+    
     private func savePatient() {
             guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
             let context = appDelegate.persistentContainer.viewContext
+            
+            guard let caregiver = getCurrentCaregiver() else {
+                showAlert(message: "Could not determine current account. Please try again.")
+                return
+            }
             
             let patient = Patient(context: context)
             patient.firstName = firstNameTextField.text
@@ -735,6 +782,7 @@ class AddPatientViewController: UIViewController {
             patient.dateOfBirth = dateOfBirthPicker.date
             patient.veteranStatus = isVeteran
             patient.incomeRange = selectedIncome  // Simple property assignment
+            patient.caregiver = caregiver
             
             do {
                 try context.save()

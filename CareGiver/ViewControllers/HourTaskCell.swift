@@ -24,7 +24,7 @@ class HourTaskCell: UITableViewCell {
         
         // Hour label
         hourLabel.font = UIFont.boldSystemFont(ofSize: 14)
-        hourLabel.textColor = .black
+        hourLabel.textColor = .label
         hourLabel.translatesAutoresizingMaskIntoConstraints = false
         
         // Hour line
@@ -39,7 +39,7 @@ class HourTaskCell: UITableViewCell {
         
         // Task label
         taskLabel.font = UIFont.systemFont(ofSize: 14)
-        taskLabel.textColor = .black
+        taskLabel.textColor = .label
         taskLabel.textAlignment = .center
         taskLabel.numberOfLines = 0
         shadeView.addSubview(taskLabel)
@@ -144,3 +144,4 @@ class HourTaskCell: UITableViewCell {
         // shadeView.isHidden = true
     }
 }
+

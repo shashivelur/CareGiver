@@ -73,6 +73,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "reportCell")
+        tableView.separatorStyle = .singleLine
         tableView.rowHeight = 100
         tableView.backgroundColor = .clear
     }
@@ -97,7 +98,8 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
         let cell = tableView.dequeueReusableCell(withIdentifier: "reportCell", for: indexPath)
         cell.contentView.subviews.forEach { $0.removeFromSuperview() }
         cell.selectionStyle = .default
-        cell.backgroundColor = .white
+        cell.backgroundColor = .secondarySystemBackground
+        cell.contentView.backgroundColor = .secondarySystemBackground
         cell.accessoryType = .disclosureIndicator
 
         let report = reports[indexPath.row]
@@ -113,6 +115,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
         let titleLabel = UILabel()
         titleLabel.text = report.title
         titleLabel.font = .systemFont(ofSize: 17, weight: .medium)
+        titleLabel.textColor = .label
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         cell.contentView.addSubview(titleLabel)
 
@@ -128,6 +131,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
         // Thumbnail scroll
         let thumbnailScroll = UIScrollView()
         thumbnailScroll.showsHorizontalScrollIndicator = false
+        thumbnailScroll.backgroundColor = .clear
         thumbnailScroll.translatesAutoresizingMaskIntoConstraints = false
         cell.contentView.addSubview(thumbnailScroll)
 
@@ -175,6 +179,10 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
             thumbnailScroll.topAnchor.constraint(equalTo: previewLabel.bottomAnchor, constant: 4),
             thumbnailScroll.heightAnchor.constraint(equalToConstant: 50)
         ])
+        
+        cell.textLabel?.text = nil
+        cell.detailTextLabel?.text = nil
+        
         return cell
     }
 

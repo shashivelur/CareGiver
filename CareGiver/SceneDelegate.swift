@@ -22,6 +22,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = root
             self.window = window
             window.makeKeyAndVisible()
+            
+            // Keep legacy global profile image key in sync with the logged-in user
+            NotificationCenter.default.addObserver(self, selector: #selector(syncLegacyProfileImageKey), name: .SessionChanged, object: nil)
+            // Perform an initial sync at launch
+            syncLegacyProfileImageKey()
         }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -32,6 +37,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
+        syncLegacyProfileImageKey()
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
     }
@@ -42,6 +48,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {
+        syncLegacyProfileImageKey()
         // Called as the scene transitions from the background to the foreground.
         // Use this method to undo the changes made on entering the background.
     }
@@ -54,4 +61,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Save changes in the application's managed object context when the application transitions to the background.
         (UIApplication.shared.delegate as? AppDelegate)?.saveContext()
     }
+    
+    @objc private func syncLegacyProfileImageKey() {
+        let defaults = UserDefaults.standard
+        guard let username = defaults.string(forKey: "LoggedInUsername") else { return }
+        let perUserKey = "CaregiverProfileImageData_\(username)"
+        if let data = defaults.data(forKey: perUserKey) {
+            // Mirror per-user image to legacy global key so old UI continues to show correct photo
+            defaults.set(data, forKey: "CaregiverProfileImageData")
+        } else {
+            // Clear legacy key if no per-user image exists to avoid leaking previous user's photo
+            defaults.removeObject(forKey: "CaregiverProfileImageData")
+        }
+    }
 }
+
