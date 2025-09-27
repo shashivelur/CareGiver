@@ -71,38 +71,20 @@ class TaskListCell: UITableViewCell {
     }
 
     func configure(with tasks: [String], title: String = "Tasks") {
-        print("DEBUG: TaskListCell configure called with \(tasks.count) tasks: \(tasks)")
         self.tasks = tasks
         self.titleLabel.text = title
         self.isRecentlyCompletedSection = title == "Recently Completed"
         taskCheckedStates = Array(repeating: false, count: tasks.count)
 
-        // Force complete removal of all arranged subviews
-        taskStack.arrangedSubviews.forEach { 
-            taskStack.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
+        taskStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
-        // Show up to maxVisibleTasks + 0.5 (partial 4th task)
-        let visibleCount = min(tasks.count, maxVisibleTasks + 1) // Show 4 if available
-        for (index, task) in tasks.prefix(visibleCount).enumerated() {
+        for (index, task) in tasks.enumerated() {
             let taskView = createTaskView(task: task, index: index)
             taskStack.addArrangedSubview(taskView)
-            
-            // If this is the 4th task and there are more, make it partial height
-            if index == maxVisibleTasks && tasks.count > maxVisibleTasks {
-                taskView.heightAnchor.constraint(equalToConstant: taskHeight / 2).isActive = true
-            }
         }
         
         // Enable scrolling if more than maxVisibleTasks
         scrollView.isScrollEnabled = tasks.count > maxVisibleTasks
-        
-        // Force layout update
-        taskStack.setNeedsLayout()
-        taskStack.layoutIfNeeded()
-        setNeedsLayout()
-        layoutIfNeeded()
     }
 
     private func createTaskView(task: String, index: Int) -> UIView {
