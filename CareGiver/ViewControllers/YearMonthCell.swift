@@ -21,7 +21,7 @@ class YearMonthCell: UICollectionViewCell {
     private func setupViews() {
         titleLabel.font = UIFont.boldSystemFont(ofSize: 14)
         titleLabel.textAlignment = .center
-        titleLabel.textColor = .systemRed
+        titleLabel.textColor = .systemIndigo
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         calendarGrid.translatesAutoresizingMaskIntoConstraints = false
@@ -65,3 +65,4 @@ class YearMonthCell: UICollectionViewCell {
         onMonthTapped?(month, year)
     }
 }
+

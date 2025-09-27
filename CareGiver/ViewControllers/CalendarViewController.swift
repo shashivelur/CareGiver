@@ -25,6 +25,10 @@ class TrustedPeoplePickerViewController: UIViewController, UITableViewDataSource
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
+        
+        tableView.tintColor = .systemIndigo
+        saveButton.tintColor = .systemIndigo
+        cancelButton.tintColor = .systemIndigo
 
         saveButton.setTitle("Save", for: .normal)
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
@@ -118,6 +122,10 @@ class TimePickerViewController: UIViewController {
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
         view.addSubview(cancelButton)
+        
+        picker.tintColor = .systemIndigo
+        saveButton.tintColor = .systemIndigo
+        cancelButton.tintColor = .systemIndigo
 
         NSLayoutConstraint.activate([
             picker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -170,6 +178,10 @@ class DatePickerViewController: UIViewController {
         view.addSubview(picker)
         view.addSubview(saveButton)
         view.addSubview(cancelButton)
+        
+        picker.tintColor = .systemIndigo
+        saveButton.tintColor = .systemIndigo
+        cancelButton.tintColor = .systemIndigo
 
         NSLayoutConstraint.activate([
             picker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -211,6 +223,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     let viewModeControl = UISegmentedControl(items: ["Day", "Month", "Year"])
     let hourlyTableView = UITableView()
     let addTaskButton = UIButton(type: .system)
+    private var topBar: UIView!
     var currentSelectedDate = Date()
     var tempDateText: String?
     private var dayNavigationStack: UIStackView!
@@ -229,7 +242,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         collectionView.delegate = self
         collectionView.register(YearMonthCell.self, forCellWithReuseIdentifier: "MonthCell")
         collectionView.isScrollEnabled = true
-        collectionView.backgroundColor = .white
+        collectionView.backgroundColor = .systemBackground
         collectionView.isHidden = true
         return collectionView
     }()
@@ -247,7 +260,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         let b = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
         b.setImage(UIImage(systemName: "person.2.fill", withConfiguration: config), for: .normal)
-        b.tintColor = .systemBlue
+        b.tintColor = .systemIndigo
         b.accessibilityLabel = "Trusted People"
         b.translatesAutoresizingMaskIntoConstraints = false
         return b
@@ -286,7 +299,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
         title = "Calendar"
         view.backgroundColor = .systemBackground
-
+        
         // Load saved tasks and notification duration
         loadTasks()
         loadNotificationDuration()
@@ -312,21 +325,59 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         viewModeControl.selectedSegmentIndex = 0
         viewModeControl.addTarget(self, action: #selector(viewModeChanged), for: .valueChanged)
         viewModeControl.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(viewModeControl)
-        view.addSubview(trustedPeopleButton)
 
-        // ✅ Connect button tap
+        // Indigo styling for segmented control
+        viewModeControl.tintColor = .systemIndigo
+        if #available(iOS 13.0, *) {
+            viewModeControl.selectedSegmentTintColor = .systemIndigo
+        }
+
+        // Container bar to prevent the segmented control from drifting
+        let topBar = UIView()
+        self.topBar = topBar
+        topBar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(topBar)
+
+        // Add controls to the container
+        trustedPeopleButton.translatesAutoresizingMaskIntoConstraints = false
+        topBar.addSubview(viewModeControl)
+        topBar.addSubview(trustedPeopleButton)
+
+        // Connect button tap
         trustedPeopleButton.addTarget(self, action: #selector(openTrustedPeople), for: .touchUpInside)
 
+        // Strengthen intrinsic size behavior so it stays centered and visible
+        viewModeControl.setContentHuggingPriority(.required, for: .horizontal)
+        viewModeControl.setContentCompressionResistancePriority(.required, for: .horizontal)
+        viewModeControl.setContentHuggingPriority(.required, for: .vertical)
+        viewModeControl.setContentCompressionResistancePriority(.required, for: .vertical)
+
+        // Layout the container at the top safe area with fixed height
         NSLayoutConstraint.activate([
-            trustedPeopleButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
-            trustedPeopleButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
+            topBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            topBar.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            topBar.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            topBar.heightAnchor.constraint(equalToConstant: 48)
         ])
 
+        // Trusted people button vertically centered and pinned to trailing
         NSLayoutConstraint.activate([
-            viewModeControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-            viewModeControl.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            trustedPeopleButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+            trustedPeopleButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor, constant: -16)
         ])
+
+        // Segmented control centered vertically and horizontally within the container
+        NSLayoutConstraint.activate([
+            viewModeControl.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
+            viewModeControl.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+            viewModeControl.leadingAnchor.constraint(greaterThanOrEqualTo: topBar.leadingAnchor, constant: 16),
+            viewModeControl.trailingAnchor.constraint(lessThanOrEqualTo: topBar.trailingAnchor, constant: -16)
+        ])
+
+        // Prevent overlap with the trusted people button while preserving centering
+        let avoidOverlap = viewModeControl.trailingAnchor.constraint(lessThanOrEqualTo: trustedPeopleButton.leadingAnchor, constant: -12)
+        avoidOverlap.priority = UILayoutPriority(999)
+        avoidOverlap.isActive = true
     }
 
     func setupCalendarView() {
@@ -336,10 +387,11 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         // Enable date selection
         calendarView.selectionBehavior = UICalendarSelectionSingleDate(delegate: self)
+        calendarView.tintColor = .systemIndigo
         
         view.addSubview(calendarView)
         NSLayoutConstraint.activate([
-            calendarView.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
+            calendarView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
@@ -357,11 +409,29 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         backButton.setTitle("<", for: .normal)
         backButton.titleLabel?.font = .boldSystemFont(ofSize: 20)
         backButton.addTarget(self, action: #selector(previousDay), for: .touchUpInside)
+        backButton.tintColor = .systemIndigo
 
         let forwardButton = UIButton(type: .system)
         forwardButton.setTitle(">", for: .normal)
         forwardButton.titleLabel?.font = .boldSystemFont(ofSize: 20)
         forwardButton.addTarget(self, action: #selector(nextDay), for: .touchUpInside)
+        forwardButton.tintColor = .systemIndigo
+
+        selectedDateLabel.numberOfLines = 1
+        selectedDateLabel.adjustsFontSizeToFitWidth = true
+        selectedDateLabel.minimumScaleFactor = 0.8
+
+        backButton.setContentHuggingPriority(.required, for: .horizontal)
+        forwardButton.setContentHuggingPriority(.required, for: .horizontal)
+        backButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        forwardButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        selectedDateLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        selectedDateLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+        NSLayoutConstraint.activate([
+            backButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 28),
+            forwardButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 28)
+        ])
 
         dayNavigationStack = UIStackView(arrangedSubviews: [backButton, selectedDateLabel, forwardButton])
         dayNavigationStack.axis = .horizontal
@@ -371,7 +441,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         view.addSubview(dayNavigationStack)
 
         NSLayoutConstraint.activate([
-            dayNavigationStack.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
+            dayNavigationStack.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             dayNavigationStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
             dayNavigationStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20)
         ])
@@ -442,11 +512,15 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
     func setupAddTaskButton() {
         addTaskButton.setTitle("Add Task", for: .normal)
-        addTaskButton.backgroundColor = .systemBlue
+        addTaskButton.backgroundColor = .systemIndigo
         addTaskButton.setTitleColor(.white, for: .normal)
         addTaskButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
         addTaskButton.layer.cornerRadius = 10
         addTaskButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        addTaskButton.setContentHuggingPriority(.required, for: .vertical)
+        addTaskButton.setContentCompressionResistancePriority(.required, for: .vertical)
+        
         addTaskButton.addTarget(self, action: #selector(presentAddTaskPopup), for: .touchUpInside)
         view.addSubview(addTaskButton)
 
@@ -985,8 +1059,9 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
     func setupYearCollectionView() {
         view.addSubview(yearCollectionView)
+        yearCollectionView.tintColor = .systemIndigo
         NSLayoutConstraint.activate([
-            yearCollectionView.topAnchor.constraint(equalTo: viewModeControl.bottomAnchor, constant: 10),
+            yearCollectionView.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
             yearCollectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10),
             yearCollectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -10),
             yearCollectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10)
