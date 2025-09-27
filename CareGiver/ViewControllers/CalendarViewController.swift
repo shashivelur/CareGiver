@@ -2,31 +2,6 @@ import UIKit
 import UserNotifications
 import EventKit
 
-// MARK: - TaskTime Struct
-struct TaskTime: Codable {
-    let startTime: Date
-    let endTime: Date
-}
-
-// MARK: - TaskDetails Struct
-struct TaskDetails: Codable {
-    let startTime: Date
-    let endTime: Date
-    let startLocation: String?
-    let destination: String?
-    let description: String?
-    let trustedPeople: [TrustedPerson]
-    
-    init(startTime: Date, endTime: Date, startLocation: String? = nil, destination: String? = nil, description: String? = nil, trustedPeople: [TrustedPerson] = []) {
-        self.startTime = startTime
-        self.endTime = endTime
-        self.startLocation = startLocation
-        self.destination = destination
-        self.description = description
-        self.trustedPeople = trustedPeople
-    }
-}
-
 class TrustedPeoplePickerViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     var trustedPeople: [TrustedPerson] = []
     var selectedPeople: Set<TrustedPerson> = []
@@ -294,16 +269,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     // Key = date string ("yyyy-MM-dd"), value = [hour: [tasks]]
     var tasksByDateAndHour: [String: [Int: [String]]] = [:] { didSet { saveTasks() } }
     
-    // Store comprehensive task details: Key = task name, value = TaskDetails
-    var taskDetails: [String: TaskDetails] = [:] { didSet { saveTasks() } }
-    
     // Recently completed tasks (persists, shows last 3)
     var recentlyCompletedTasks: [String] = [] { didSet { saveTasks() } }
-    
-    // Storage keys (like trusted people system)
-    private let tasksStorageKey = "tasks_by_date_and_hour_v2"
-    private let taskDetailsStorageKey = "task_details_v2"
-    private let recentlyCompletedStorageKey = "recently_completed_tasks_v2"
 
     // Store selected time values and which field was tapped
     var selectedStartTime: Date?
@@ -332,7 +299,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
         title = "Calendar"
         view.backgroundColor = .systemBackground
-
         
         // Load saved tasks and notification duration
         loadTasks()
@@ -353,26 +319,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         setupAddTaskButton()
         setupYearCollectionView()
         viewModeChanged()
-    }
-    
-    private func resetTempValues() {
-        self.tempTaskTitle = nil
-        self.tempStartTimeText = nil
-        self.tempEndTimeText = nil
-        self.tempStartLocation = nil
-        self.tempDestination = nil
-        self.tempDescription = nil
-        self.tempDateText = nil
-        self.selectedStartTime = nil
-        self.selectedEndTime = nil
-        self.tempTrustedPeople = []
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // Reset temp values and reload data when view appears
-        resetTempValues()
-        hourlyTableView.reloadData()
     }
 
     func setupSegmentedControl() {
@@ -682,20 +628,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 self.tasksByDateAndHour[dateKey]?[hour] = [title]
             }
 
-            // Store comprehensive task details
-            if let startTime = self.selectedStartTime, let endTime = self.selectedEndTime {
-                self.taskDetails[title] = TaskDetails(
-                    startTime: startTime,
-                    endTime: endTime,
-                    startLocation: self.tempStartLocation,
-                    destination: self.tempDestination,
-                    description: self.tempDescription,
-                    trustedPeople: self.tempTrustedPeople
-                )
-                // Explicitly save after creating task details
-                self.saveTasks()
-            }
-
             if let startTime = self.selectedStartTime {
                 self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
             }
@@ -735,37 +667,14 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
         guard let hour = taskHour else { return }
         
-        // Try to get the real start/end time from stored task details or selectedStartTime/selectedEndTime
+        // Try to get the real start/end time from selectedStartTime/selectedEndTime if they match this task
         var startTimeString: String = ""
         var endTimeString: String = ""
-        var startLocationString: String = ""
-        var destinationString: String = ""
-        var descriptionString: String = ""
-        var trustedPeopleString: String = ""
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
-        
-        if let storedDetails = taskDetails[task] {
-            // Use stored comprehensive details
-            startTimeString = formatter.string(from: storedDetails.startTime)
-            endTimeString = formatter.string(from: storedDetails.endTime)
-            startLocationString = storedDetails.startLocation ?? ""
-            destinationString = storedDetails.destination ?? ""
-            descriptionString = storedDetails.description ?? ""
-            trustedPeopleString = storedDetails.trustedPeople.map { $0.name }.joined(separator: ", ")
-            // Populate temp variables for editing
-            self.tempStartLocation = storedDetails.startLocation
-            self.tempDestination = storedDetails.destination
-            self.tempDescription = storedDetails.description
-            self.tempTrustedPeople = storedDetails.trustedPeople
-        } else if let start = selectedStartTime, let end = selectedEndTime, tempTaskTitle == task {
-            // Fallback to selectedStartTime/selectedEndTime for newly created tasks
+        if let start = selectedStartTime, let end = selectedEndTime, tempTaskTitle == task {
             startTimeString = formatter.string(from: start)
             endTimeString = formatter.string(from: end)
-            startLocationString = tempStartLocation ?? ""
-            destinationString = tempDestination ?? ""
-            descriptionString = tempDescription ?? ""
-            trustedPeopleString = tempTrustedPeople.map { $0.name }.joined(separator: ", ")
         } else {
             // Fallback to hour-based logic
             let calendar = Calendar.current
@@ -796,21 +705,22 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             textField.inputView = UIView()
             textField.text = endTimeString
         }
+        
         // Start location
         alert.addTextField { textField in
             textField.placeholder = "Start Location (optional)"
-            textField.text = startLocationString
         }
+        
         // Destination
         alert.addTextField { textField in
             textField.placeholder = "Destination (optional)"
-            textField.text = destinationString
         }
+        
         // Description
         alert.addTextField { textField in
             textField.placeholder = "Description (optional)"
-            textField.text = descriptionString
         }
+        
         // Date
         alert.addTextField { textField in
             textField.placeholder = "Date"
@@ -820,12 +730,12 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             formatter.dateStyle = .medium
             textField.text = formatter.string(from: self.currentSelectedDate)
         }
-        // Trusted People
+        
+        // Trusted people
         alert.addTextField { textField in
             textField.placeholder = "Assign Trusted People"
             textField.tag = 200
             textField.inputView = UIView()
-            textField.text = trustedPeopleString
         }
         
         // Capture references to text fields
@@ -856,12 +766,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
             guard let fields = alert.textFields,
                   let newTitle = fields[0].text, !newTitle.isEmpty else { return }
-
-            // Parse trusted people from field (comma-separated names)
-            let trustedPeopleNames = fields[6].text?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } ?? []
-            let allTrusted = self.loadTrustedPeople()
-                let trustedPeople = allTrusted.filter { trustedPeopleNames.contains($0.name) }
-
+            
             // Update the task with new details
             self.updateTaskWithNewDetails(
                 oldTask: task,
@@ -872,7 +777,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 destination: fields[4].text,
                 description: fields[5].text,
                 date: fields[6].text,
-                trustedPeople: trustedPeople,
+                trustedPeople: fields[7].text,
                 originalHour: hour
             )
         }
@@ -884,13 +789,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         present(alert, animated: true)
     }
-    private func loadTrustedPeople() -> [TrustedPerson] {
-        if let data = UserDefaults.standard.data(forKey: "trusted_people_storage_v1"),
-           let decoded = try? JSONDecoder().decode([TrustedPerson].self, from: data) {
-            return decoded
-        }
-        return []
-    }
     
     private func updateTaskWithNewDetails(
         oldTask: String,
@@ -901,7 +799,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         destination: String?,
         description: String?,
         date: String?,
-        trustedPeople: [TrustedPerson],
+        trustedPeople: String?,
         originalHour: Int
     ) {
         // Keys and helpers
@@ -951,84 +849,11 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         targetTasksByHour[targetHour] = list
         tasksByDateAndHour[targetDateKey] = targetTasksByHour
 
-        // Update stored task details
-        if let startTimeStr = startTime, let endTimeStr = endTime,
-           let newStartTime = timeFormatter.date(from: startTimeStr),
-           let newEndTime = timeFormatter.date(from: endTimeStr) {
-            // New times provided - use them
-            taskDetails[newTitle] = TaskDetails(
-                startTime: newStartTime,
-                endTime: newEndTime,
-                startLocation: startLocation,
-                destination: destination,
-                description: description,
-                trustedPeople: trustedPeople
-            )
-        } else if let storedDetails = taskDetails[oldTask] {
-            // No new times provided - copy from old task but update other fields
-            taskDetails[newTitle] = TaskDetails(
-                startTime: storedDetails.startTime,
-                endTime: storedDetails.endTime,
-                startLocation: startLocation ?? storedDetails.startLocation,
-                destination: destination ?? storedDetails.destination,
-                description: description ?? storedDetails.description,
-                trustedPeople: trustedPeople.isEmpty ? storedDetails.trustedPeople : trustedPeople
-            )
-        } else {
-            // No stored details and no new times - create basic details with hour-based times
-            let calendar = Calendar.current
-            let startDate = calendar.date(bySettingHour: targetHour, minute: 0, second: 0, of: targetDate) ?? targetDate
-            let endDate = calendar.date(bySettingHour: targetHour + 1, minute: 0, second: 0, of: targetDate) ?? targetDate
-            
-            taskDetails[newTitle] = TaskDetails(
-                startTime: startDate,
-                endTime: endDate,
-                startLocation: startLocation,
-                destination: destination,
-                description: description,
-                trustedPeople: trustedPeople
-            )
-        }
-        
-        // Remove old task details if title changed
-        if oldTask != newTitle {
-            taskDetails.removeValue(forKey: oldTask)
-        }
-        
-        // Explicitly save after updating task details
-        saveTasks()
-
-        // Update tempTaskTitle and temp values for highlighting
+        // Update tempTaskTitle so highlight label updates
         self.tempTaskTitle = newTitle
-        self.tempStartLocation = startLocation
-        self.tempDestination = destination
-        self.tempDescription = description
-        // tempTrustedPeople is already set from the edit popup
-        
-        // Update temp times for highlighting if new times were provided
-        if let startTimeStr = startTime, let endTimeStr = endTime,
-           let newStartTime = timeFormatter.date(from: startTimeStr),
-           let newEndTime = timeFormatter.date(from: endTimeStr) {
-            self.selectedStartTime = newStartTime
-            self.selectedEndTime = newEndTime
-        }
 
-        // UI refresh - force complete reload
+        // UI refresh
         hourlyTableView.reloadData()
-        
-        // Force task list cell to reconfigure
-        DispatchQueue.main.async {
-            if let cell = self.hourlyTableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? TaskListCell {
-                let tasksForDate = self.tasksByDateAndHour[targetDateKey] ?? [:]
-                let combinedTasks = tasksForDate.keys.sorted().flatMap { tasksForDate[$0] ?? [] }
-                cell.configure(with: combinedTasks)
-            }
-        }
-        
-        // Reset temp values after editing (with delay to allow highlighting to show)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.resetTempValues()
-        }
     }
 
     // MARK: - Notification helper
@@ -1113,128 +938,25 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     
     // MARK: - Task Persistence
     private func loadTasks() {
-        // Load tasks by date and hour
-        if let data = UserDefaults.standard.data(forKey: tasksStorageKey),
+        if let data = UserDefaults.standard.data(forKey: "tasks_by_date_and_hour"),
            let decoded = try? JSONDecoder().decode([String: [Int: [String]]].self, from: data) {
             tasksByDateAndHour = decoded
-        } else {
-            // Try old key for migration
-            if let data = UserDefaults.standard.data(forKey: "tasks_by_date_and_hour"),
-               let decoded = try? JSONDecoder().decode([String: [Int: [String]]].self, from: data) {
-                tasksByDateAndHour = decoded
-                saveTasks() // Save with new key
-            }
         }
         
-        // Load task details
-        if let data = UserDefaults.standard.data(forKey: taskDetailsStorageKey),
-           let decoded = try? JSONDecoder().decode([String: TaskDetails].self, from: data) {
-            taskDetails = decoded
-        } else {
-            // Try old key for migration
-            if let data = UserDefaults.standard.data(forKey: "task_details"),
-               let decoded = try? JSONDecoder().decode([String: TaskDetails].self, from: data) {
-                taskDetails = decoded
-                saveTasks() // Save with new key
-            } else {
-                // Migrate from old task_times format if it exists
-                migrateFromOldTaskTimes()
-            }
-        }
-        
-        // Load recently completed tasks
-        if let data = UserDefaults.standard.data(forKey: recentlyCompletedStorageKey),
+        if let data = UserDefaults.standard.data(forKey: "recently_completed_tasks"),
            let decoded = try? JSONDecoder().decode([String].self, from: data) {
             recentlyCompletedTasks = decoded
-        } else {
-            // Try old key for migration
-            if let data = UserDefaults.standard.data(forKey: "recently_completed_tasks"),
-               let decoded = try? JSONDecoder().decode([String].self, from: data) {
-                recentlyCompletedTasks = decoded
-                saveTasks() // Save with new key
-            }
-        }
-        
-        // Migrate existing tasks that don't have details
-        migrateExistingTasksWithoutDetails()
-    }
-    
-    private func migrateFromOldTaskTimes() {
-        if let data = UserDefaults.standard.data(forKey: "task_times"),
-           let oldTaskTimes = try? JSONDecoder().decode([String: TaskTime].self, from: data) {
-            // Convert old TaskTime format to new TaskDetails format
-            for (taskName, taskTime) in oldTaskTimes {
-                taskDetails[taskName] = TaskDetails(
-                    startTime: taskTime.startTime,
-                    endTime: taskTime.endTime
-                )
-            }
-            // Save the migrated data
-            saveTasks()
-            // Remove the old data
-            UserDefaults.standard.removeObject(forKey: "task_times")
-        }
-    }
-    
-    private func migrateExistingTasksWithoutDetails() {
-        var needsSaving = false
-        let calendar = Calendar.current
-        
-        for (dateKey, tasksByHour) in tasksByDateAndHour {
-            for (hour, taskNames) in tasksByHour {
-                for taskName in taskNames {
-                    // If task doesn't have details, create basic ones
-                    if taskDetails[taskName] == nil {
-                        // Parse the date
-                        let dateFormatter = DateFormatter()
-                        dateFormatter.dateFormat = "yyyy-MM-dd"
-                        if let date = dateFormatter.date(from: dateKey) {
-                            let startDate = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: date) ?? date
-                            let endDate = calendar.date(bySettingHour: hour + 1, minute: 0, second: 0, of: date) ?? date
-                            
-                            taskDetails[taskName] = TaskDetails(
-                                startTime: startDate,
-                                endTime: endDate
-                            )
-                            needsSaving = true
-                        }
-                    }
-                }
-            }
-        }
-        
-        if needsSaving {
-            saveTasks()
         }
     }
     
     private func saveTasks() {
-        // Save tasks by date and hour
         if let data = try? JSONEncoder().encode(tasksByDateAndHour) {
-            UserDefaults.standard.set(data, forKey: tasksStorageKey)
-            print("DEBUG: Saved tasksByDateAndHour with \(tasksByDateAndHour.count) dates")
-        } else {
-            print("ERROR: Failed to encode tasksByDateAndHour")
+            UserDefaults.standard.set(data, forKey: "tasks_by_date_and_hour")
         }
         
-        // Save task details
-        if let data = try? JSONEncoder().encode(taskDetails) {
-            UserDefaults.standard.set(data, forKey: taskDetailsStorageKey)
-            print("DEBUG: Saved taskDetails with \(taskDetails.count) tasks")
-        } else {
-            print("ERROR: Failed to encode taskDetails")
-        }
-        
-        // Save recently completed tasks
         if let data = try? JSONEncoder().encode(recentlyCompletedTasks) {
-            UserDefaults.standard.set(data, forKey: recentlyCompletedStorageKey)
-            print("DEBUG: Saved recentlyCompletedTasks with \(recentlyCompletedTasks.count) tasks")
-        } else {
-            print("ERROR: Failed to encode recentlyCompletedTasks")
+            UserDefaults.standard.set(data, forKey: "recently_completed_tasks")
         }
-        
-        // Force UserDefaults to sync immediately
-        UserDefaults.standard.synchronize()
     }
     
     private func hasTimeConflict(dateKey: String, hour: Int) -> Bool {
@@ -1405,39 +1127,50 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             let cell = tableView.dequeueReusableCell(withIdentifier: "HourTaskCell", for: indexPath) as! HourTaskCell
             cell.configure(hourText: hourText, tasks: tasks)
 
-            // Highlight all tasks in this hour using persistent data
-            var anyHighlighted = false
-            for task in tasks {
-                if let details = taskDetails[task] {
+            // Only highlight for the selected date and time - ensure single highlighting
+            if let start = selectedStartTime, let end = selectedEndTime, let tempDateText = tempDateText {
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateStyle = .medium
+                let selectedTaskDate = dateFormatter.date(from: tempDateText)
+                let isCurrentDate = Calendar.current.isDate(selectedTaskDate ?? Date(), inSameDayAs: currentSelectedDate)
+                if isCurrentDate {
                     let calendar = Calendar.current
-                    let startHour = calendar.component(.hour, from: details.startTime)
-                    let endHour = calendar.component(.hour, from: details.endTime)
-                    let startMinute = calendar.component(.minute, from: details.startTime)
-                    let endMinute = calendar.component(.minute, from: details.endTime)
-                    
-                    // Show highlighting for this task in this hour
-                    if hourIndex == startHour && hourIndex == endHour {
-                        // Task is entirely within this hour
-                        cell.showShadedRegion(startMinute: startMinute, endMinute: endMinute, taskName: task)
-                        anyHighlighted = true
-                    } else if hourIndex == startHour {
-                        // Task starts in this hour - show from start minute to end of hour
-                        cell.showShadedRegion(startMinute: startMinute, endMinute: 60, taskName: task)
-                        anyHighlighted = true
-                    } else if hourIndex > startHour && hourIndex < endHour {
-                        // Task spans this entire hour
-                        cell.showShadedRegion(startMinute: 0, endMinute: 60, taskName: task)
-                        anyHighlighted = true
-                    } else if hourIndex == endHour {
-                        // Task ends in this hour - show from start of hour to end minute
-                        cell.showShadedRegion(startMinute: 0, endMinute: endMinute, taskName: task)
-                        anyHighlighted = true
+                    var startHour = calendar.component(.hour, from: start)
+                    var startMinute = calendar.component(.minute, from: start)
+                    startMinute += 30
+                    if startMinute >= 60 {
+                        startMinute -= 60
+                        startHour += 1
                     }
+
+                    var endHour = calendar.component(.hour, from: end)
+                    var endMinute = calendar.component(.minute, from: end)
+                    endMinute += 30
+                    if endMinute >= 60 {
+                        endMinute -= 60
+                        endHour += 1
+                    }
+                    // Only highlight if this hour is within the task time range
+                    if hourIndex == startHour && hourIndex == endHour {
+                        // Task is within this single hour
+                        cell.showShadedRegion(startMinute: startMinute, endMinute: endMinute, taskName: tempTaskTitle)
+                    } else if hourIndex == startHour {
+                        // Task starts in this hour
+                        cell.showShadedRegion(startMinute: startMinute, endMinute: 60, taskName: tempTaskTitle)
+                    } else if hourIndex > startHour && hourIndex < endHour {
+                        // Task spans this full hour
+                        cell.showShadedRegion(startMinute: 0, endMinute: 60, taskName: tempTaskTitle)
+                    } else if hourIndex == endHour {
+                        // Task ends in this hour
+                        cell.showShadedRegion(startMinute: 0, endMinute: endMinute, taskName: tempTaskTitle)
+                    } else {
+                        // No highlighting for this hour
+                        cell.showShadedRegion(startMinute: nil, endMinute: nil)
+                    }
+                } else {
+                    cell.showShadedRegion(startMinute: nil, endMinute: nil)
                 }
-            }
-            
-            // If no tasks to highlight in this hour, clear highlighting
-            if !anyHighlighted {
+            } else {
                 cell.showShadedRegion(startMinute: nil, endMinute: nil)
             }
             return cell
@@ -1450,16 +1183,11 @@ func timelineTasks(for date: Date) -> [(start: Date, end: Date)] {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: date)
     for (hour, titles) in tasksByHour {
-        for title in titles {
-            // Use stored precise times if available, otherwise fallback to hour-based
-            if let storedDetails = taskDetails[title] {
-                result.append((start: storedDetails.startTime, end: storedDetails.endTime))
-            } else {
-                // Fallback to hour-based logic
-                if let start = calendar.date(byAdding: .hour, value: hour, to: today),
-                   let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
-                    result.append((start: start, end: end))
-                }
+        for _ in titles {
+            // For demo, assume each task is 1 hour. You can adjust as needed.
+            if let start = calendar.date(byAdding: .hour, value: hour, to: today),
+               let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
+                result.append((start: start, end: end))
             }
         }
     }
@@ -1485,19 +1213,6 @@ extension CalendarViewController: TaskListCellDelegate {
         }
 
         tasksByDateAndHour[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
-        
-        // Remove stored task details
-        taskDetails.removeValue(forKey: task)
-        
-        // Force task list cell to reconfigure
-        DispatchQueue.main.async {
-            if let cell = self.hourlyTableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? TaskListCell {
-                let tasksForDate = self.tasksByDateAndHour[dateKey] ?? [:]
-                let combinedTasks = tasksForDate.keys.sorted().flatMap { tasksForDate[$0] ?? [] }
-                cell.configure(with: combinedTasks)
-            }
-        }
-        
         hourlyTableView.reloadData()
     }
     
@@ -1525,19 +1240,6 @@ extension CalendarViewController: TaskListCellDelegate {
         }
 
         tasksByDateAndHour[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
-        
-        // Remove stored task details when task is completed
-        taskDetails.removeValue(forKey: task)
-        
-        // Force task list cell to reconfigure
-        DispatchQueue.main.async {
-            if let cell = self.hourlyTableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? TaskListCell {
-                let tasksForDate = self.tasksByDateAndHour[dateKey] ?? [:]
-                let combinedTasks = tasksForDate.keys.sorted().flatMap { tasksForDate[$0] ?? [] }
-                cell.configure(with: combinedTasks)
-            }
-        }
-        
         hourlyTableView.reloadData()
     }
     
@@ -1678,25 +1380,18 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
 
         alert.present(pickerVC, animated: true)
     }
-    
 
 
 
     // MARK: - TableView Delegate
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.row == 0 {
-            // Task list - grow based on number of tasks (1, 2, 3, 3.5 then scroll)
+            // Task list - grow based on number of tasks (1, 2, 3 then scroll)
             let dateKey = stringFromDate(currentSelectedDate)
             let tasksForDate = tasksByDateAndHour[dateKey] ?? [:]
             let combinedTasks = tasksForDate.keys.sorted().flatMap { tasksForDate[$0] ?? [] }
             let taskCount = max(1, min(3, combinedTasks.count)) // Show 1-3 tasks
-            let height = CGFloat(50 + (taskCount * 50)) // Base height + task height
-            
-            // If there are more than 3 tasks, add half a task height to show partial 4th task
-            if combinedTasks.count > 3 {
-                return height + 25 // Add half task height (25)
-            }
-            return height
+            return CGFloat(50 + (taskCount * 50)) // Base height + task height
         } else if indexPath.row == 1 {
             // Recently completed - grow based on number of completed tasks (1, 2, 3 then scroll)
             let completedCount = max(1, min(3, recentlyCompletedTasks.count))
