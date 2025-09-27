@@ -52,7 +52,7 @@ import UIKit
                     let label = UILabel(frame: CGRect(x: x, y: y, width: cellWidth, height: cellHeight))
                     label.text = "\(day)"
                     label.font = .systemFont(ofSize: 10)
-                    label.textColor = .black
+                    label.textColor = .label
                     label.textAlignment = .center
                     label.isUserInteractionEnabled = false
                     addSubview(label)
@@ -76,3 +76,4 @@ import UIKit
             setupCalendar()
         }
     }
+
