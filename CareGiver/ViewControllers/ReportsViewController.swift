@@ -272,8 +272,6 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .done, target: self, action: #selector(saveTapped))
         navigationItem.rightBarButtonItem?.tintColor = .systemIndigo
         
-        navigationItem.leftBarButtonItem?.tintColor = .systemIndigo
-        
         titleField.placeholder = "Title"
         titleField.font = .systemFont(ofSize: 20, weight: .bold)
         titleField.translatesAutoresizingMaskIntoConstraints = false
