@@ -320,14 +320,23 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             name: UIApplication.willResignActiveNotification,
             object: nil
         )
+		// Refresh from Apple Calendar when app becomes active
+		NotificationCenter.default.addObserver(
+			self,
+			selector: #selector(appDidBecomeActive),
+			name: UIApplication.didBecomeActiveNotification,
+			object: nil
+		)
         
         setupSegmentedControl()
         setupCalendarView()
         setupSelectedDateLabel()
         setupHourlyTableView()
         setupAddTaskButton()
-        setupYearCollectionView()
-        viewModeChanged()
+		setupYearCollectionView()
+		// Initial import from Apple Calendar for the selected day
+		importAppleCalendarEvents(for: currentSelectedDate)
+		viewModeChanged()
     }
 
     func setupSegmentedControl() {
@@ -459,12 +468,14 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     @objc func previousDay() {
         currentSelectedDate = Calendar.current.date(byAdding: .day, value: -1, to: currentSelectedDate)!
         selectedDateLabel.text = formattedDate(currentSelectedDate)
+        importAppleCalendarEvents(for: currentSelectedDate)
         hourlyTableView.reloadData()
     }
 
     @objc func nextDay() {
         currentSelectedDate = Calendar.current.date(byAdding: .day, value: 1, to: currentSelectedDate)!
         selectedDateLabel.text = formattedDate(currentSelectedDate)
+        importAppleCalendarEvents(for: currentSelectedDate)
         hourlyTableView.reloadData()
     }
     
@@ -495,6 +506,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         print("DEBUG: About to call viewModeChanged")
         viewModeChanged()
         print("DEBUG: About to reload hourlyTableView")
+        importAppleCalendarEvents(for: date)
         hourlyTableView.reloadData()
         print("DEBUG: navigateToDayView completed")
     }
@@ -1044,6 +1056,98 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
     }
     
+    // MARK: - Import from Apple Calendar (one-way into app)
+    private func importAppleCalendarEvents(for date: Date) {
+        ensureCalendarAccess { [weak self] granted in
+            guard let self = self else { return }
+            guard granted else { return }
+            let calendar = Calendar.current
+            let startOfDay = calendar.startOfDay(for: date)
+            guard let endOfDay = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay) else { return }
+
+            let predicate = self.eventStore.predicateForEvents(withStart: startOfDay, end: endOfDay, calendars: nil)
+            let events = self.eventStore.events(matching: predicate).sorted { $0.startDate < $1.startDate }
+            let eventsById: [String: EKEvent] = Dictionary(uniqueKeysWithValues: events.map { ($0.eventIdentifier, $0) })
+
+            let dateKey = self.stringFromDate(date)
+            var dayDict: [Int: [String]] = self.tasksByDateAndHour[dateKey] ?? [:]
+
+            // 1) Reconcile existing mapped tasks for this date against today's calendar events
+            for (hour, titles) in dayDict {
+                var titlesToKeep: [String] = []
+                for title in titles {
+                    let oldKey = self.eventKey(dateKey: dateKey, hour: hour, title: title)
+                    if let mappedId = self.taskEventIdByKey[oldKey] {
+                        if let ev = eventsById[mappedId] {
+                            // Event still exists; check for title/hour changes
+                            let newHour = calendar.component(.hour, from: ev.startDate)
+                            let newTitle = ev.title
+                            let newKey = self.eventKey(dateKey: dateKey, hour: newHour, title: newTitle)
+                            if newKey != oldKey {
+                                // Move to new bucket and update mapping
+                                var list = dayDict[newHour] ?? []
+                                if !list.contains(newTitle) { list.append(newTitle) }
+                                dayDict[newHour] = list
+                                self.taskEventIdByKey.removeValue(forKey: oldKey)
+                                self.taskEventIdByKey[newKey] = mappedId
+                                // Do not keep old title in old bucket
+                            } else {
+                                titlesToKeep.append(title)
+                            }
+                        } else {
+                            // Event was deleted/doesn't belong to today; drop task and mapping
+                            self.taskEventIdByKey.removeValue(forKey: oldKey)
+                        }
+                    } else {
+                        // Unmapped internal task; keep as-is
+                        titlesToKeep.append(title)
+                    }
+                }
+                dayDict[hour] = titlesToKeep.isEmpty ? nil : titlesToKeep
+            }
+
+            // 2) Add or refresh mappings for today's events (including new external events)
+            for event in events {
+                let startHour = calendar.component(.hour, from: event.startDate)
+                let key = self.eventKey(dateKey: dateKey, hour: startHour, title: event.title)
+                // Remap any previous key for this identifier to the current key
+                if let existingKey = self.taskEventIdByKey.first(where: { $0.value == event.eventIdentifier })?.key, existingKey != key {
+                    // Remove title from old bucket if present
+                    let comps = existingKey.split(separator: "|")
+                    if comps.count == 3, let oldHour = Int(comps[1]) {
+                        if var oldList = dayDict[oldHour] {
+                            oldList.removeAll { $0 == String(comps[2]) }
+                            dayDict[oldHour] = oldList.isEmpty ? nil : oldList
+                        }
+                    }
+                    self.taskEventIdByKey.removeValue(forKey: existingKey)
+                }
+                self.taskEventIdByKey[key] = event.eventIdentifier
+
+                var list = dayDict[startHour] ?? []
+                if !list.contains(event.title) {
+                    list.append(event.title)
+                }
+                dayDict[startHour] = list
+            }
+
+            self.tasksByDateAndHour[dateKey] = dayDict
+            self.saveEventIds()
+
+            // 3) Update highlight shading to reflect first event for the day
+            if let firstEvent = events.first {
+                self.tempTaskTitle = firstEvent.title
+                self.selectedStartTime = firstEvent.startDate
+                self.selectedEndTime = firstEvent.endDate
+                let df = DateFormatter()
+                df.dateStyle = .medium
+                self.tempDateText = df.string(from: date)
+            }
+
+            self.hourlyTableView.reloadData()
+        }
+    }
+    
     // MARK: - Task Persistence
     private func loadTasks() {
         if let data = UserDefaults.standard.data(forKey: "tasks_by_date_and_hour"),
@@ -1177,6 +1281,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     @objc private func appWillResignActive() {
         // Tasks are now automatically saved via didSet observers
     }
+
+	@objc private func appDidBecomeActive() {
+		importAppleCalendarEvents(for: currentSelectedDate)
+	}
 
     func setupYearCollectionView() {
         view.addSubview(yearCollectionView)
