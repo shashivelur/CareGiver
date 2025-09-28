@@ -61,19 +61,19 @@ class GovernmentAidInfoViewController: UIViewController {
 
     // MARK: - Box Tap Handlers
     @objc private func vaBoxTapped() {
-        let vc = GovernmentAidWebViewController(urlString: "https://www.va.gov/caregiver-support/", pageTitle: "VA Benefits Application")
+        let vc = VAOptionsViewController()
         navigationController?.pushViewController(vc, animated: true)
     }
     @objc private func medicareBoxTapped() {
-        let vc = GovernmentAidWebViewController(urlString: "https://www.medicare.gov/basics/get-started-with-medicare", pageTitle: "Medicare Application")
+        let vc = GovernmentAidWebViewController(urlString: "https://secure.ssa.gov/iClaim/rib", pageTitle: "Medicare Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     @objc private func medicaidBoxTapped() {
-        let vc = GovernmentAidWebViewController(urlString: "https://www.medicaid.gov/medicaid/how-to-apply/index.html", pageTitle: "Medicaid Application")
+        let vc = GovernmentAidWebViewController(urlString: "https://www.medicaid.gov/about-us/contact-us/contact-state-page.html", pageTitle: "Medicaid Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     @objc private func ssdiBoxTapped() {
-        let vc = GovernmentAidWebViewController(urlString: "https://www.ssa.gov/benefits/disability/", pageTitle: "SSDI Application")
+        let vc = GovernmentAidWebViewController(urlString: "https://www.ssa.gov/applyfordisability/", pageTitle: "SSDI Application")
         navigationController?.pushViewController(vc, animated: true)
     }
     

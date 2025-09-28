@@ -55,6 +55,10 @@
 		E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */; };
 		E65E55612E6610A3008329E6 /* AidDetailViewController 2.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */; };
 		E67EF1822E77695C0086D673 /* GovernmentAidWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */; };
+		E67EF1842E777BD40086D673 /* VACaregiverFormViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF1832E777BD40086D673 /* VACaregiverFormViewController.swift */; };
+		E67EF1862E89E69C0086D673 /* VAOptionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF1852E89E69C0086D673 /* VAOptionsViewController.swift */; };
+		E67EF18A2E89E99D0086D673 /* CAFCEligibilityResultViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF1892E89E99D0086D673 /* CAFCEligibilityResultViewController.swift */; };
+		E67EF1902E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67EF18F2E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -106,6 +110,10 @@
 		E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GovernmentAidInfoViewController.swift; sourceTree = "<group>"; };
 		E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AidDetailViewController 2.swift"; sourceTree = "<group>"; };
 		E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GovernmentAidWebViewController.swift; sourceTree = "<group>"; };
+		E67EF1832E777BD40086D673 /* VACaregiverFormViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VACaregiverFormViewController.swift; sourceTree = "<group>"; };
+		E67EF1852E89E69C0086D673 /* VAOptionsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VAOptionsViewController.swift; sourceTree = "<group>"; };
+		E67EF1892E89E99D0086D673 /* CAFCEligibilityResultViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CAFCEligibilityResultViewController.swift; sourceTree = "<group>"; };
+		E67EF18F2E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CAFCEligibilityResultViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -175,8 +183,12 @@
 			children = (
 				332D9AE22E898F5000C7224B /* RegisterBeaconViewController.swift */,
 				E65E55602E6610A3008329E6 /* AidDetailViewController 2.swift */,
+				E67EF18F2E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift */,
+				E67EF1892E89E99D0086D673 /* CAFCEligibilityResultViewController.swift */,
 				E65E555C2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift */,
 				E67EF1812E77695C0086D673 /* GovernmentAidWebViewController.swift */,
+				E67EF1852E89E69C0086D673 /* VAOptionsViewController.swift */,
+				E67EF1832E777BD40086D673 /* VACaregiverFormViewController.swift */,
 				A1B2C3D4E681 /* FinancialAssistanceViewController.swift */,
 				6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */,
 				A1B2C3D4E601 /* LoginViewController.swift */,
@@ -313,11 +325,14 @@
 				6111DB152E765B3B00D0DE04 /* Patient+CoreDataClass.swift in Sources */,
 				6111DB162E765B3B00D0DE04 /* Patient+CoreDataProperties.swift in Sources */,
 				E65E555D2E5BB9BD008329E6 /* GovernmentAidInfoViewController.swift in Sources */,
+				E67EF1862E89E69C0086D673 /* VAOptionsViewController.swift in Sources */,
 				5CC275B82E526E95003408F7 /* MonthCalendarView.swift in Sources */,
+				E67EF1842E777BD40086D673 /* VACaregiverFormViewController.swift in Sources */,
 				5CC275B92E526E95003408F7 /* CheckBoxButton.swift in Sources */,
 				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
 				332D9AED2E89934A00C7224B /* DetectedBeaconCell.swift in Sources */,
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
+				E67EF1902E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
 				332D9AE62E898F7300C7224B /* BeaconAnnotation.swift in Sources */,
 				332D9AE72E898F7300C7224B /* BeaconDevice.swift in Sources */,
@@ -339,6 +354,7 @@
 				E67EF1822E77695C0086D673 /* GovernmentAidWebViewController.swift in Sources */,
 				A1B2C3D4E624 /* ReportsViewController.swift in Sources */,
 				A1B2C3D4E626 /* HelpViewController.swift in Sources */,
+				E67EF18A2E89E99D0086D673 /* CAFCEligibilityResultViewController.swift in Sources */,
 				5CC275B42E526E7A003408F7 /* HourTaskCell.swift in Sources */,
 				A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */,
 				6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */,
