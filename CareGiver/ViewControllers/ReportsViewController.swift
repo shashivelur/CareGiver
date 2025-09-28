@@ -133,6 +133,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
         thumbnailScroll.showsHorizontalScrollIndicator = false
         thumbnailScroll.backgroundColor = .clear
         thumbnailScroll.translatesAutoresizingMaskIntoConstraints = false
+        thumbnailScroll.isUserInteractionEnabled = false
         cell.contentView.addSubview(thumbnailScroll)
 
         var lastThumbnail: UIView? = nil
@@ -235,14 +236,20 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
 
 // MARK: - Report Editor with Photos
 class ReportEditorViewController: UIViewController, PHPickerViewControllerDelegate {
-
+    
     var report: Report?
     var onSave: ((Report) -> Void)?
-
+    
+    private let mediaContainer = UIView()
+    private let primaryImageView = UIImageView()
+    private let addPhotoButton = UIButton(type: .system)
+    private var mediaHeightConstraint: NSLayoutConstraint?
+    private var imageAspectConstraint: NSLayoutConstraint?
+    
     private let titleField = UITextField()
     private let textView = UITextView()
     private var images: [UIImage] = []
-
+    
     init(report: Report? = nil) {
         self.report = report
         super.init(nibName: nil, bundle: nil)
@@ -250,58 +257,84 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
             self.images = reportImages.compactMap { UIImage(data: $0) }
         }
     }
-
+    
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         navigationController?.navigationBar.tintColor = .systemIndigo
         setupUI()
     }
-
+    
     private func setupUI() {
         title = "Report"
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Save", style: .done, target: self, action: #selector(saveTapped))
-
+        navigationItem.rightBarButtonItem?.tintColor = .systemIndigo
+        
+        navigationItem.leftBarButtonItem?.tintColor = .systemIndigo
+        
         titleField.placeholder = "Title"
         titleField.font = .systemFont(ofSize: 20, weight: .bold)
         titleField.translatesAutoresizingMaskIntoConstraints = false
         titleField.text = report?.title
         view.addSubview(titleField)
-
+        
         textView.font = .systemFont(ofSize: 16)
         textView.translatesAutoresizingMaskIntoConstraints = false
         textView.text = report?.content
         view.addSubview(textView)
-
-        let addPhotoButton = UIButton(type: .system)
+        
         addPhotoButton.setTitle("Add Photo", for: .normal)
+        addPhotoButton.tintColor = .systemIndigo
         addPhotoButton.addTarget(self, action: #selector(addPhotoTapped), for: .touchUpInside)
         addPhotoButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(addPhotoButton)
-
+        
+        mediaContainer.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(mediaContainer)
+        
+        primaryImageView.clipsToBounds = true
+        primaryImageView.contentMode = .scaleAspectFit
+        primaryImageView.translatesAutoresizingMaskIntoConstraints = false
+        mediaContainer.addSubview(primaryImageView)
+        
+        mediaContainer.addSubview(addPhotoButton)
+        
         NSLayoutConstraint.activate([
             titleField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             titleField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             titleField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             titleField.heightAnchor.constraint(equalToConstant: 40),
-
+            
             textView.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 8),
             textView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             textView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             textView.heightAnchor.constraint(equalToConstant: 200),
-
-            addPhotoButton.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 16),
-            addPhotoButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            
+            mediaContainer.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 16),
+            mediaContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            mediaContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            
+            primaryImageView.topAnchor.constraint(equalTo: mediaContainer.topAnchor),
+            primaryImageView.leadingAnchor.constraint(equalTo: mediaContainer.leadingAnchor),
+            primaryImageView.trailingAnchor.constraint(equalTo: mediaContainer.trailingAnchor),
+            primaryImageView.bottomAnchor.constraint(equalTo: mediaContainer.bottomAnchor),
+            
+            addPhotoButton.centerXAnchor.constraint(equalTo: mediaContainer.centerXAnchor),
+            addPhotoButton.centerYAnchor.constraint(equalTo: mediaContainer.centerYAnchor)
         ])
+        
+        mediaHeightConstraint = mediaContainer.heightAnchor.constraint(equalToConstant: 200)
+        mediaHeightConstraint?.isActive = true
+        
+        updateMediaUI()
     }
-
+    
     @objc private func saveTapped() {
         guard let titleText = titleField.text?.trimmingCharacters(in: .whitespacesAndNewlines), !titleText.isEmpty else { return }
         let contentText = textView.text ?? ""
         let imageDataArray = images.compactMap { $0.pngData() }
-
+        
         let newReport = Report(
             title: titleText,
             content: contentText,
@@ -309,12 +342,12 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
             isReviewed: report?.isReviewed ?? false,
             images: imageDataArray
         )
-
+        
         onSave?(newReport)
         ReportsManager.shared.saveReports()
         navigationController?.popViewController(animated: true)
     }
-
+    
     @objc private func addPhotoTapped() {
         var config = PHPickerConfiguration()
         config.selectionLimit = 0
@@ -323,7 +356,7 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
         picker.delegate = self
         present(picker, animated: true)
     }
-
+    
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
         picker.dismiss(animated: true)
         for result in results {
@@ -332,12 +365,48 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
                     if let image = object as? UIImage {
                         DispatchQueue.main.async {
                             self?.images.append(image)
-                            self?.view.setNeedsLayout()
+                            self?.updateMediaUI()
                         }
                     }
                 }
             }
         }
+    }
+    
+    private func updateMediaUI() {
+        // Deactivate any previous aspect/height constraints before applying new ones
+        if let oldAspect = imageAspectConstraint {
+            oldAspect.isActive = false
+            imageAspectConstraint = nil
+        }
+
+        if let firstImage = images.first {
+            primaryImageView.image = firstImage
+            primaryImageView.isHidden = false
+            addPhotoButton.isHidden = true
+
+            // Remove default fixed height; size container based on image aspect within limits
+            mediaHeightConstraint?.isActive = false
+
+            // Maintain aspect by tying container height to its width (so image can aspect-fit inside)
+            let aspect = firstImage.size.height / max(firstImage.size.width, 1)
+            let aspectHeight = mediaContainer.heightAnchor.constraint(equalTo: mediaContainer.widthAnchor, multiplier: aspect)
+            aspectHeight.priority = .defaultHigh // allow cap constraint to win if needed
+            aspectHeight.isActive = true
+            imageAspectConstraint = aspectHeight
+        } else {
+            primaryImageView.image = nil
+            primaryImageView.isHidden = true
+            addPhotoButton.isHidden = false
+
+            // No image: ensure a reasonable default height
+            if mediaHeightConstraint == nil {
+                mediaHeightConstraint = mediaContainer.heightAnchor.constraint(equalToConstant: 200)
+            }
+            mediaHeightConstraint?.isActive = true
+        }
+
+        view.layoutIfNeeded()
     }
 }
 
