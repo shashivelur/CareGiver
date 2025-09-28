@@ -124,7 +124,7 @@ extension HelpViewController: UISearchResultsUpdating {
             let filtered = section.items.filter { item in
                 item.title.lowercased().contains(q) || item.message.lowercased().contains(q)
             }
-            return filtered.isEmpty ? nil : (section.title, filtered)
+            return filtered.isEmpty ? nil : (title: section.title, items: filtered)
         }
         tableView.reloadData()
     }
