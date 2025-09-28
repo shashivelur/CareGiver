@@ -272,6 +272,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     // Recently completed tasks (persists, shows last 3)
     var recentlyCompletedTasks: [String] = [] { didSet { saveTasks() } }
 
+    // Map our tasks to Apple Calendar event identifiers for update/delete syncing
+    // Key format: "<dateKey>|<hour>|<title>"
+    private var taskEventIdByKey: [String: String] = [:]
+
     // Store selected time values and which field was tapped
     var selectedStartTime: Date?
     var selectedEndTime: Date?
@@ -289,6 +293,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         return formatter.string(from: date)
     }
 
+    private func eventKey(dateKey: String, hour: Int, title: String) -> String {
+        return "\(dateKey)|\(hour)|\(title)"
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         UNUserNotificationCenter.current().delegate = self
@@ -302,6 +310,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         // Load saved tasks and notification duration
         loadTasks()
+        loadEventIds()
         loadNotificationDuration()
         
         // Observe app lifecycle events
@@ -639,7 +648,14 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             
             // Add to Apple Calendar
             if let startTime = self.selectedStartTime, let endTime = self.selectedEndTime {
-                self.addTaskToAppleCalendar(title: title, startTime: startTime, endTime: endTime, description: self.tempDescription ?? "")
+                self.addTaskToAppleCalendar(
+                    title: title,
+                    startTime: startTime,
+                    endTime: endTime,
+                    description: self.tempDescription ?? "",
+                    dateKey: dateKey,
+                    hour: hour
+                )
             }
             
             // Reload table view to show the new task
@@ -852,6 +868,46 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         // Update tempTaskTitle so highlight label updates
         self.tempTaskTitle = newTitle
 
+        // Update Apple Calendar event
+        if let startText = startTime,
+           let endText = endTime {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+            let timeFormatter = DateFormatter()
+            timeFormatter.dateFormat = "h:mm a"
+
+            let baseDate = formatter.date(from: date ?? formatter.string(from: currentSelectedDate)) ?? currentSelectedDate
+            let calendar = Calendar.current
+
+            var startComponents = calendar.dateComponents([.year, .month, .day], from: baseDate)
+            if let time = timeFormatter.date(from: startText) {
+                let comps = calendar.dateComponents([.hour, .minute], from: time)
+                startComponents.hour = comps.hour
+                startComponents.minute = comps.minute
+            }
+            var endComponents = calendar.dateComponents([.year, .month, .day], from: baseDate)
+            if let time = timeFormatter.date(from: endText) {
+                let comps = calendar.dateComponents([.hour, .minute], from: time)
+                endComponents.hour = comps.hour
+                endComponents.minute = comps.minute
+            }
+
+            if let newStart = calendar.date(from: startComponents),
+               let newEnd = calendar.date(from: endComponents) {
+                let oldKey = eventKey(dateKey: originalDateKey, hour: originalHour, title: oldTask)
+                updateOrCreateCalendarEvent(
+                    oldKey: oldKey,
+                    newDateKey: targetDateKey,
+                    newHour: targetHour,
+                    newTitle: newTitle,
+                    newStart: newStart,
+                    newEnd: newEnd,
+                    description: description
+                )
+            }
+        }
+
         // UI refresh
         hourlyTableView.reloadData()
     }
@@ -908,19 +964,18 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     }
     
     // MARK: - Apple Calendar Integration
-    func addTaskToAppleCalendar(title: String, startTime: Date, endTime: Date, description: String) {
-        eventStore.requestAccess(to: .event) { [weak self] granted, error in
-            DispatchQueue.main.async {
-                if granted {
-                    self?.createCalendarEvent(title: title, startTime: startTime, endTime: endTime, description: description)
-                } else {
-                    print("Calendar access denied: \(error?.localizedDescription ?? "Unknown error")")
-                }
+    func addTaskToAppleCalendar(title: String, startTime: Date, endTime: Date, description: String, dateKey: String, hour: Int) {
+        ensureCalendarAccess { [weak self] granted in
+            guard let self = self else { return }
+            if granted {
+                self.createCalendarEvent(title: title, startTime: startTime, endTime: endTime, description: description, dateKey: dateKey, hour: hour)
+            } else {
+                print("Calendar access denied while adding event")
             }
         }
     }
     
-    private func createCalendarEvent(title: String, startTime: Date, endTime: Date, description: String) {
+    private func createCalendarEvent(title: String, startTime: Date, endTime: Date, description: String, dateKey: String, hour: Int) {
         let event = EKEvent(eventStore: eventStore)
         event.title = title
         event.startDate = startTime
@@ -931,8 +986,61 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         do {
             try eventStore.save(event, span: .thisEvent)
             print("Event saved to Apple Calendar: \(title)")
+            let key = eventKey(dateKey: dateKey, hour: hour, title: title)
+            taskEventIdByKey[key] = event.eventIdentifier
+            saveEventIds()
         } catch {
             print("Error saving event to Apple Calendar: \(error.localizedDescription)")
+        }
+    }
+
+    private func updateOrCreateCalendarEvent(oldKey: String, newDateKey: String, newHour: Int, newTitle: String, newStart: Date, newEnd: Date, description: String?) {
+        ensureCalendarAccess { [weak self] granted in
+            guard let self = self else { return }
+            guard granted else {
+                print("Calendar access denied while updating event")
+                return
+            }
+
+            if let identifier = self.taskEventIdByKey[oldKey], let existing = self.eventStore.event(withIdentifier: identifier) {
+                existing.title = newTitle
+                existing.startDate = newStart
+                existing.endDate = newEnd
+                existing.notes = description
+                do {
+                    try self.eventStore.save(existing, span: .thisEvent)
+                    // move mapping to new key if key changed
+                    let newKey = self.eventKey(dateKey: newDateKey, hour: newHour, title: newTitle)
+                    self.taskEventIdByKey.removeValue(forKey: oldKey)
+                    self.taskEventIdByKey[newKey] = existing.eventIdentifier
+                    self.saveEventIds()
+                } catch {
+                    print("Failed to update calendar event: \(error.localizedDescription)")
+                }
+            } else {
+                // No existing event found, create new and store mapping
+                self.createCalendarEvent(title: newTitle, startTime: newStart, endTime: newEnd, description: description ?? "", dateKey: newDateKey, hour: newHour)
+            }
+        }
+    }
+
+    private func deleteCalendarEventIfExists(dateKey: String, hour: Int, title: String) {
+        let key = eventKey(dateKey: dateKey, hour: hour, title: title)
+        guard let identifier = taskEventIdByKey[key], let event = eventStore.event(withIdentifier: identifier) else {
+            return
+        }
+        do {
+            try eventStore.remove(event, span: .thisEvent)
+            taskEventIdByKey.removeValue(forKey: key)
+            saveEventIds()
+        } catch {
+            print("Failed to delete calendar event: \(error.localizedDescription)")
+        }
+    }
+
+    private func ensureCalendarAccess(completion: @escaping (Bool) -> Void) {
+        eventStore.requestAccess(to: .event) { granted, _ in
+            DispatchQueue.main.async { completion(granted) }
         }
     }
     
@@ -956,6 +1064,19 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         if let data = try? JSONEncoder().encode(recentlyCompletedTasks) {
             UserDefaults.standard.set(data, forKey: "recently_completed_tasks")
+        }
+    }
+
+    private func loadEventIds() {
+        if let data = UserDefaults.standard.data(forKey: "task_event_ids_v1"),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            taskEventIdByKey = decoded
+        }
+    }
+
+    private func saveEventIds() {
+        if let data = try? JSONEncoder().encode(taskEventIdByKey) {
+            UserDefaults.standard.set(data, forKey: "task_event_ids_v1")
         }
     }
     
@@ -1042,7 +1163,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         // Add to Apple Calendar
         if let startTime = startTime, let endTime = endTime {
-            addTaskToAppleCalendar(title: title, startTime: startTime, endTime: endTime, description: description ?? "")
+            addTaskToAppleCalendar(title: title, startTime: startTime, endTime: endTime, description: description ?? "", dateKey: dateKey, hour: hour)
         }
         
         // Reload table view to show the new task
@@ -1204,6 +1325,8 @@ extension CalendarViewController: TaskListCellDelegate {
 
         for (hour, tasks) in tasksByHour {
             if let index = tasks.firstIndex(of: task) {
+                // Delete linked Apple Calendar event if present
+                deleteCalendarEventIfExists(dateKey: dateKey, hour: hour, title: task)
                 tasksByHour[hour]?.remove(at: index)
                 if tasksByHour[hour]?.isEmpty == true {
                     tasksByHour.removeValue(forKey: hour)
