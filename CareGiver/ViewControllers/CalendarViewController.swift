@@ -1081,7 +1081,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                         if let ev = eventsById[mappedId] {
                             // Event still exists; check for title/hour changes
                             let newHour = calendar.component(.hour, from: ev.startDate)
-                            let newTitle = ev.title
+                            let newTitle = ev.title ?? "Untitled Event"
                             let newKey = self.eventKey(dateKey: dateKey, hour: newHour, title: newTitle)
                             if newKey != oldKey {
                                 // Move to new bucket and update mapping
