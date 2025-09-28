@@ -21,5 +21,7 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSCalendarsUsageDescription</key>
+	<string>This app adds and updates your caregiving tasks in Calendar.</string>
 </dict>
 </plist>
