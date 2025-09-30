@@ -64,6 +64,7 @@ class MenuViewController: UIViewController {
         setupHeaderView()
         setupTableView()
         setupConstraints()
+        setupLogoutFooter()
         updateHeaderInfo()
     }
     
@@ -140,6 +141,23 @@ class MenuViewController: UIViewController {
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+    
+    private func setupLogoutFooter() {
+        let logoutButton = UIButton(type: .system)
+        logoutButton.setTitle("Log Out", for: .normal)
+        logoutButton.setTitleColor(.systemIndigo, for: .normal)
+        logoutButton.backgroundColor = .clear
+        logoutButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        logoutButton.addTarget(self, action: #selector(logoutTapped), for: .touchUpInside)
+        logoutButton.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(logoutButton)
+
+        NSLayoutConstraint.activate([
+            logoutButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logoutButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
         ])
     }
     
@@ -240,6 +258,38 @@ class MenuViewController: UIViewController {
             }
         }
     }
+    
+    @objc private func logoutTapped() {
+        // Clear logged-in session
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "LoggedInUsername")
+        defaults.synchronize()
+        NotificationCenter.default.post(name: .SessionChanged, object: nil)
+
+        // Dismiss the side menu first, then reset to login
+        if let sideMenuController = self.navigationController as? SideMenuNavigationController {
+            sideMenuController.dismiss(animated: true) { [weak self] in
+                self?.resetToLoginRoot()
+            }
+        } else {
+            dismiss(animated: true) { [weak self] in
+                self?.resetToLoginRoot()
+            }
+        }
+    }
+
+    private func resetToLoginRoot() {
+        // Reset app root to the initial view controller (Login)
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let initial = storyboard.instantiateInitialViewController()
+
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return
+        }
+        window.rootViewController = initial
+        window.makeKeyAndVisible()
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -277,4 +327,3 @@ extension MenuViewController: UITableViewDelegate {
         return 60
     }
 }
-
