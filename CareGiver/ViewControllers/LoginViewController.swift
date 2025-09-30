@@ -15,6 +15,11 @@ class LoginViewController: UIViewController {
         super.viewDidLoad()
         
         faceIDButton?.isHidden = true
+
+        // Dismiss keyboard when tapping outside text fields
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -155,9 +160,14 @@ class LoginViewController: UIViewController {
         }
     }
     
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
     func showAlert(message: String) {
         let alert = UIAlertController(title: "Login", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }
+

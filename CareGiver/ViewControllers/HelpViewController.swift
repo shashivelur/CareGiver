@@ -271,7 +271,7 @@ final class CGFeedbackViewController: UIViewController {
             textView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             textView.heightAnchor.constraint(equalToConstant: 200),
 
-            submit.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 20),
+            submit.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             submit.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
     }

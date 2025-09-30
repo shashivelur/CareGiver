@@ -29,10 +29,22 @@ class RegisterStep1ViewController: UIViewController {
     }
 
     @IBAction func nextButtonTapped(_ sender: UIButton) {
+        // Require all fields to be filled out before continuing
+        let trimmedUsername = usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmedPassword = passwordTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmedFirst = firstNameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmedLast = lastNameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmedEmail = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmedPhone = phoneNumberTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if trimmedUsername.isEmpty || trimmedPassword.isEmpty || trimmedFirst.isEmpty || trimmedLast.isEmpty || trimmedEmail.isEmpty || trimmedPhone.isEmpty {
+            let alert = UIAlertController(title: "Error", message: "Please fill out all fields.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
          if let enteredUsername = usernameTextField.text,
             !enteredUsername.isEmpty,
-            let enteredPassword = passwordTextField.text,
-              enteredPassword.count >= 8 {
+            let enteredPassword = passwordTextField.text{
              
              
              guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
