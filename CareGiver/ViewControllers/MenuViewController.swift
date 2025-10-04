@@ -1,4 +1,5 @@
 import UIKit
+import FirebaseAuth
 import SideMenu
 import CoreData
 
@@ -264,7 +265,12 @@ class MenuViewController: UIViewController {
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "LoggedInUsername")
         defaults.synchronize()
-        NotificationCenter.default.post(name: .SessionChanged, object: nil)
+        do {
+            try Auth.auth().signOut()
+        } catch {
+            print("Error signing out: \(error)")
+        }
+        NotificationCenter.default.post(name: NSNotification.Name("SessionChanged"), object: nil)
 
         // Dismiss the side menu first, then reset to login
         if let sideMenuController = self.navigationController as? SideMenuNavigationController {

@@ -9,6 +9,9 @@ import UIKit
 import CoreData
 import CryptoKit
 import LocalAuthentication
+import FirebaseCore
+import FirebaseAuth
+import FirebaseFirestore
 
 
 class RegisterStep1ViewController: UIViewController {
@@ -22,10 +25,24 @@ class RegisterStep1ViewController: UIViewController {
     @IBOutlet weak var nextButton: UIButton!
     
     private let faceIDOptInKeyPrefix = "BiometricEnabled_"
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardDismissal()
+    }
+    
+    var handle: AuthStateDidChangeListenerHandle?
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(true)
+        handle = Auth.auth().addStateDidChangeListener { auth, user in
+          // ...
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(true)
+        Auth.auth().removeStateDidChangeListener(handle!)
     }
 
     @IBAction func nextButtonTapped(_ sender: UIButton) {
@@ -36,51 +53,92 @@ class RegisterStep1ViewController: UIViewController {
         let trimmedLast = lastNameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let trimmedEmail = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let trimmedPhone = phoneNumberTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
         if trimmedUsername.isEmpty || trimmedPassword.isEmpty || trimmedFirst.isEmpty || trimmedLast.isEmpty || trimmedEmail.isEmpty || trimmedPhone.isEmpty {
             let alert = UIAlertController(title: "Error", message: "Please fill out all fields.", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             present(alert, animated: true)
             return
         }
-         if let enteredUsername = usernameTextField.text,
-            !enteredUsername.isEmpty,
-            let enteredPassword = passwordTextField.text{
-             
-             
-             guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-             let context = appDelegate.persistentContainer.viewContext
-             
-             do {
-                 try createCaregiver()
-                 
-                 // Reset per-account profile image so a new account starts clean
-                 ProfileImageStore.remove(for: enteredUsername)
-                 // Notify the app that the active session changed so screens can reload data
-                 NotificationCenter.default.post(name: .SessionChanged, object: nil)
-                 
-             } catch {
-                 print("There was an error saving the password. Please try again.")
-             }
-         
-             
-         } else {
-             let alert = UIAlertController(title: "Error", message: "Please fill out all fields.", preferredStyle: .alert)
-             alert.addAction(UIAlertAction(title: "OK", style: .default))
-             present(alert, animated: true)
-             return
-         }
-         
-         
-        
-        printAllUserProfiles()
-             
-        let caregivers = fetchCaregivers()
+
+        // Proceed with local save and Firebase account creation
+        if let enteredUsername = self.usernameTextField.text,
+           !enteredUsername.isEmpty,
+           let _ = self.passwordTextField.text {
+
+            // Compute hashed password once for cloud + local consistency
+            guard let hashedPassword = self.sha256(for: trimmedPassword) else {
+                let alert = UIAlertController(title: "Error", message: "There was a problem processing your password. Please try again.", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self.present(alert, animated: true)
+                return
+            }
+
+            do {
+                // Save locally (stores hashed password in Core Data)
+                try self.createCaregiver()
+
+                // Create account in Firebase with email and hashed password (to match login flow)
+                Auth.auth().createUser(withEmail: trimmedEmail, password: hashedPassword) { authResult, error in
+                    if let error = error {
+                        print("Firebase account creation failed: \(error.localizedDescription)")
+                    } else {
+                        print("Firebase account created for email: \(trimmedEmail)")
+
+                        // Save user profile to Firestore using the Auth UID as the document ID
+                        let db = Firestore.firestore()
+                        guard let uid = authResult?.user.uid else {
+                            print("Error: Missing auth UID after account creation.")
+                            return
+                        }
+
+                        let userData: [String: Any] = [
+                            "uid": uid,
+                            "username": trimmedUsername,
+                            "usernameLowercased": trimmedUsername.lowercased(),
+                            "email": trimmedEmail,
+                            "firstName": trimmedFirst,
+                            "lastName": trimmedLast,
+                            "phoneNumber": trimmedPhone,
+                            "dateOfBirth": Timestamp(date: self.birthdayDatePicker.date),
+                            "createdAt": FieldValue.serverTimestamp()
+                        ]
+
+                        db.collection("users").document(uid).setData(userData) { err in
+                            if let err = err {
+                                print("Failed to save user profile: \(err.localizedDescription)")
+                            } else {
+                                print("User profile saved to Firestore for uid: \(uid)")
+                            }
+                        }
+                    }
+                }
+
+                // Reset per-account profile image so a new account starts clean
+                ProfileImageStore.remove(for: enteredUsername)
+                // Notify the app that the active session changed so screens can reload data
+                NotificationCenter.default.post(name: .SessionChanged, object: nil)
+
+            } catch {
+                print("There was an error saving the password. Please try again.")
+            }
+
+        } else {
+            let alert = UIAlertController(title: "Error", message: "Please fill out all fields.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(alert, animated: true)
+            return
+        }
+
+        self.printAllUserProfiles()
+
+        let caregivers = self.fetchCaregivers()
         for c in caregivers {
             print("Username: \(c.username ?? "nil"), Password: \(c.password ?? "nil")")
         }
 
         // Offer Face ID enablement, then navigate based on choice
-        if let username = usernameTextField.text, !username.isEmpty {
+        if let username = self.usernameTextField.text, !username.isEmpty {
             self.offerFaceIDEnablement(for: username)
         } else {
             self.navigateToHome()
@@ -119,35 +177,37 @@ class RegisterStep1ViewController: UIViewController {
         let context = appDelegate.persistentContainer.viewContext
 
         let caregiver = Caregiver(context: context)
-        
+
         // Save all the fields with proper field names
-        caregiver.username = usernameTextField.text
-        caregiver.password = sha256(for: passwordTextField.text ?? "") // Hash the password
-        caregiver.email = emailTextField.text
-        caregiver.firstName = firstNameTextField.text
-        caregiver.lastName = lastNameTextField.text  // This was at the end - move it up
-        caregiver.phoneNumber = phoneNumberTextField.text
-        
-        // Check if your Core Data model uses 'birthday' or 'dateOfBirth'
-        // In ProfileViewController you're looking for 'birthday', so use that:
-        caregiver.dateOfBirth = birthdayDatePicker.date
-        // OR if your model actually uses 'dateOfBirth', then update ProfileViewController
-        
-        // Add debug print to see what's being saved
-        print("=== Saving Caregiver ===")
+        let username = (usernameTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawPassword = (passwordTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let email = (emailTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let firstName = (firstNameTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let lastName = (lastNameTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let phone = (phoneNumberTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let dob = birthdayDatePicker.date
+
+        caregiver.username = username
+        caregiver.password = sha256(for: rawPassword) // Hash the password locally
+        caregiver.email = email
+        caregiver.firstName = firstName
+        caregiver.lastName = lastName
+        caregiver.phoneNumber = phone
+        caregiver.dateOfBirth = dob
+
+        // Debug log
+        print("=== Saving Caregiver (Local) ===")
         print("Username: \(caregiver.username ?? "nil")")
         print("FirstName: \(caregiver.firstName ?? "nil")")
         print("LastName: \(caregiver.lastName ?? "nil")")
         print("Email: \(caregiver.email ?? "nil")")
         print("Phone: \(caregiver.phoneNumber ?? "nil")")
         print("Birthday: \(caregiver.dateOfBirth?.description ?? "nil")")
-        print("========================")
+        print("===============================")
 
         try context.save()
         UserDefaults.standard.set(caregiver.username, forKey: "LoggedInUsername")
         UserDefaults.standard.synchronize()
-        
-        print("Caregiver saved successfully!")
     }
     
     private func navigateToHome() {
