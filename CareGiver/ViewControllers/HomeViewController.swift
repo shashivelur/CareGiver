@@ -2,6 +2,8 @@ import UIKit
 import SideMenu
 import CoreData
 import MapKit
+import FirebaseCore
+import FirebaseAuth
 
 class HomeViewController: UIViewController {
     
@@ -33,12 +35,21 @@ class HomeViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: NSNotification.Name("SessionChanged"), object: nil)
     }
     
+    var handle: AuthStateDidChangeListenerHandle?
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(true)
+        Auth.auth().removeStateDidChangeListener(handle!)
+    }
+
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         loadPatients()
         checkPatientStatus()
+        handle = Auth.auth().addStateDidChangeListener { auth, user in
+          // ...
+        }
     }
     
 

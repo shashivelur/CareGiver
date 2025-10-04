@@ -2,6 +2,9 @@ import UIKit
 import CoreData
 import CryptoKit  // Add this import
 import LocalAuthentication
+import FirebaseCore
+import FirebaseAuth
+import FirebaseFirestore
 
 class LoginViewController: UIViewController {
     
@@ -48,18 +51,87 @@ class LoginViewController: UIViewController {
     }
     
     @IBAction func loginButtonPressed(_ sender: UIButton) {
-        guard let username = usernameTextField.text, !username.isEmpty,
+        guard let usernameOrEmail = usernameTextField.text, !usernameOrEmail.isEmpty,
               let password = passwordTextField.text, !password.isEmpty else {
             showAlert(message: "Please enter both username and password")
             return
         }
-        
-        if authenticate(username: username, password: password) {
-            // ✅ Success — navigate to the next screen
-            performSegue(withIdentifier: "toHomePageFromLogin", sender: self)
+
+        // Compute hashed password once for both cloud and local auth
+        guard let hashedPassword = sha256(for: password) else {
+            showAlert(message: "Error processing password")
+            return
+        }
+
+        // Try cloud first: if input looks like an email, use it; otherwise try to resolve via Firestore username mapping.
+        let trimmed = usernameOrEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let tryLocalFallback: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            self.tryLocalAuth(username: usernameOrEmail, password: password)
+        }
+
+        let attemptFirebaseSignIn: (String) -> Void = { [weak self] email in
+            guard let self = self else { return }
+            Auth.auth().signIn(withEmail: email, password: hashedPassword) { [weak self] authResult, error in
+                guard let self = self else { return }
+                if let error = error {
+                    print("Firebase sign-in failed: \(error.localizedDescription). Falling back to local auth.")
+                    tryLocalFallback()
+                    return
+                }
+
+                // On Firebase success, pull profile from Firestore and sync to local Core Data, then proceed
+                let proceedToHome: (String) -> Void = { sessionUsername in
+                    UserDefaults.standard.set(sessionUsername, forKey: "LoggedInUsername")
+                    UserDefaults.standard.synchronize()
+                    NotificationCenter.default.post(name: .SessionChanged, object: nil)
+                    self.performSegue(withIdentifier: "toHomePageFromLogin", sender: self)
+                }
+
+                guard let uid = authResult?.user.uid else {
+                    let sessionUsername = self.resolveUsernameForSession(typed: trimmed, email: email)
+                    proceedToHome(sessionUsername)
+                    return
+                }
+
+                Firestore.firestore().collection("users").document(uid).getDocument { [weak self] snapshot, err in
+                    guard let self = self else { return }
+                    if let err = err {
+                        print("Failed to fetch Firestore profile: \(err.localizedDescription)")
+                        let sessionUsername = self.resolveUsernameForSession(typed: trimmed, email: email)
+                        proceedToHome(sessionUsername)
+                        return
+                    }
+
+                    if let data = snapshot?.data() {
+                        self.upsertLocalCaregiver(from: data)
+                        let sessionUsername = (data["username"] as? String).flatMap { raw -> String? in
+                            let trimmedUsername = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                            return trimmedUsername.isEmpty ? nil : trimmedUsername
+                        } ?? self.resolveUsernameForSession(typed: trimmed, email: email)
+                        proceedToHome(sessionUsername)
+                    } else {
+                        let sessionUsername = self.resolveUsernameForSession(typed: trimmed, email: email)
+                        proceedToHome(sessionUsername)
+                    }
+                }
+            }
+        }
+
+        if trimmed.contains("@") {
+            // Direct email
+            attemptFirebaseSignIn(trimmed)
         } else {
-            // ❌ Failure
-            showAlert(message: "Invalid username or password")
+            // Username: resolve via Firestore, then attempt cloud sign-in; on failure, fallback to local
+            resolveEmailFromCloud(for: trimmed) { [weak self] resolvedEmail in
+                guard let self = self else { return }
+                if let email = resolvedEmail {
+                    attemptFirebaseSignIn(email)
+                } else {
+                    print("Could not resolve username to email in Firestore; falling back to local auth.")
+                    tryLocalFallback()
+                }
+            }
         }
     }
     
@@ -157,6 +229,132 @@ class LoginViewController: UIViewController {
                 print("Biometric login failed: \(error.localizedDescription)")
                 // Optionally present a gentle message
             }
+        }
+    }
+    
+    private func tryLocalAuth(username: String, password: String) {
+        if authenticate(username: username, password: password) {
+            performSegue(withIdentifier: "toHomePageFromLogin", sender: self)
+        } else {
+            showAlert(message: "Invalid username or password")
+        }
+    }
+
+    // Resolve an email to use for Firebase from the typed username/email or local Core Data
+    private func resolveEmail(for usernameOrEmail: String) -> String? {
+        let trimmed = usernameOrEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.contains("@") {
+            return trimmed
+        }
+
+        // Look up caregiver by username to find their email
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return nil }
+        let context = appDelegate.persistentContainer.viewContext
+        let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+        request.predicate = NSPredicate(format: "username == %@", trimmed)
+        request.fetchLimit = 1
+        do {
+            if let cg = try context.fetch(request).first, let email = cg.email, !email.isEmpty {
+                return email
+            }
+        } catch {
+            print("resolveEmail lookup by username failed: \(error)")
+        }
+        return nil
+    }
+
+    // Cloud username -> email resolver using Firestore
+    private func resolveEmailFromCloud(for username: String, completion: @escaping (String?) -> Void) {
+        let lower = username.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        Firestore.firestore()
+            .collection("users")
+            .whereField("usernameLowercased", isEqualTo: lower)
+            .limit(to: 1)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("Username lookup in Firestore failed: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
+                guard let doc = snapshot?.documents.first else {
+                    completion(nil)
+                    return
+                }
+                let email = doc.data()["email"] as? String
+                completion(email)
+            }
+    }
+
+    // Decide which username to persist in session after a Firebase success
+    private func resolveUsernameForSession(typed: String, email: String) -> String {
+        let trimmedTyped = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // If typed value is already a username (no '@'), prefer it
+        if !trimmedTyped.contains("@") {
+            return trimmedTyped
+        }
+
+        // Otherwise, try to find a local caregiver by email to obtain their username
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return trimmedTyped }
+        let context = appDelegate.persistentContainer.viewContext
+        let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+        request.predicate = NSPredicate(format: "email == %@", email)
+        request.fetchLimit = 1
+        do {
+            if let cg = try context.fetch(request).first, let uname = cg.username, !uname.isEmpty {
+                return uname
+            }
+        } catch {
+            print("resolveUsernameForSession lookup by email failed: \(error)")
+        }
+
+        // Fallback: store the typed value (which may be the email). This keeps the session non-empty.
+        return trimmedTyped
+    }
+    
+    // Upsert the caregiver in Core Data using Firestore user profile data
+    private func upsertLocalCaregiver(from data: [String: Any]) {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let context = appDelegate.persistentContainer.viewContext
+
+        let username = (data["username"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let email = (data["email"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let firstName = data["firstName"] as? String
+        let lastName = data["lastName"] as? String
+        let phoneNumber = data["phoneNumber"] as? String
+        let dob = (data["dateOfBirth"] as? Timestamp)?.dateValue()
+
+        var caregiver: Caregiver?
+
+        if let username = username, !username.isEmpty {
+            let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+            request.predicate = NSPredicate(format: "username == %@", username)
+            request.fetchLimit = 1
+            caregiver = try? context.fetch(request).first
+        }
+
+        if caregiver == nil, let email = email, !email.isEmpty {
+            let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+            request.predicate = NSPredicate(format: "email == %@", email)
+            request.fetchLimit = 1
+            caregiver = try? context.fetch(request).first
+        }
+
+        if caregiver == nil {
+            caregiver = Caregiver(context: context)
+        }
+
+        caregiver?.username = username ?? caregiver?.username
+        caregiver?.email = email ?? caregiver?.email
+        caregiver?.firstName = firstName ?? caregiver?.firstName
+        caregiver?.lastName = lastName ?? caregiver?.lastName
+        caregiver?.phoneNumber = phoneNumber ?? caregiver?.phoneNumber
+        caregiver?.dateOfBirth = dob ?? caregiver?.dateOfBirth
+
+        do {
+            try context.save()
+        } catch {
+            print("Failed to upsert local caregiver from cloud: \(error)")
         }
     }
     

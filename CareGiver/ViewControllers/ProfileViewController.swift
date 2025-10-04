@@ -1,9 +1,23 @@
 import UIKit
 import CoreData
+import FirebaseAuth
+import FirebaseFirestore
 
 class ProfileViewController: UIViewController {
     
     private var currentCaregiver: Caregiver?
+    // Cloud profile cache (preferred source)
+    private struct CloudProfile {
+        let uid: String
+        let username: String?
+        let firstName: String?
+        let lastName: String?
+        let email: String?
+        let phoneNumber: String?
+        let dateOfBirth: Date?
+    }
+    private var cloudProfile: CloudProfile?
+    
     private var scrollView: UIScrollView!
     private var contentView: UIView!
     private var profileImageView: UIImageView!
@@ -14,71 +28,76 @@ class ProfileViewController: UIViewController {
         loadCurrentCaregiver()
         setupUI()
         populateUserInfo()
+        fetchCloudProfileForActiveUser()
         NotificationCenter.default.addObserver(self, selector: #selector(profilePhotoUpdated), name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: NSNotification.Name("SessionChanged"), object: nil)
         loadProfileImageFromDefaults()
     }
     
     private func loadCurrentCaregiver() {
-           guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
-               print("Could not get app delegate")
-               return
-           }
-           let context = appDelegate.persistentContainer.viewContext
-           
-           // Check what's stored in UserDefaults
-           let loggedInUsername = UserDefaults.standard.string(forKey: "LoggedInUsername")
-           print("Looking for username from UserDefaults: '\(loggedInUsername ?? "nil")'")
-           
-           // First, try to get the caregiver from UserDefaults if we stored the logged-in user's info
-           if let loggedInUsername = loggedInUsername {
-               let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
-               request.predicate = NSPredicate(format: "username == %@", loggedInUsername)
-               request.fetchLimit = 1
-               
-               do {
-                   let caregivers = try context.fetch(request)
-                   if let caregiver = caregivers.first {
-                       currentCaregiver = caregiver
-                       print("Found logged-in caregiver: \(caregiver.username ?? "no username")")
-                       print("Caregiver first name: \(caregiver.firstName ?? "nil")")
-                       return
-                   }
-               } catch {
-                   print("Error loading caregiver by username: \(error)")
-               }
-           }
-           
-           // Debug: Let's see ALL caregivers in the database
-           let allRequest: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
-           do {
-               let allCaregivers = try context.fetch(allRequest)
-               print("Total caregivers in database: \(allCaregivers.count)")
-               
-               for (index, caregiver) in allCaregivers.enumerated() {
-                   print("Caregiver \(index + 1): username='\(caregiver.username ?? "nil")', firstName='\(caregiver.firstName ?? "nil")'")
-               }
-           } catch {
-               print("Error fetching all caregivers: \(error)")
-           }
-           
-           // Fallback: get any caregiver
-           let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
-           request.fetchLimit = 1
-           
-           do {
-               let caregivers = try context.fetch(request)
-               if let caregiver = caregivers.first {
-                   currentCaregiver = caregiver
-                   print("Found caregiver (fallback): \(caregiver.username ?? "no username")")
-                   print("Fallback caregiver first name: \(caregiver.firstName ?? "nil")")
-               } else {
-                   print("No caregivers found at all!")
-               }
-           } catch {
-               print("Error loading caregiver: \(error)")
-           }
-       }
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            print("Could not get app delegate")
+            currentCaregiver = nil
+            return
+        }
+        let context = appDelegate.persistentContainer.viewContext
+
+        // Resolve the active session username only
+        guard let loggedInUsername = UserDefaults.standard.string(forKey: "LoggedInUsername"), !loggedInUsername.isEmpty else {
+            print("No active LoggedInUsername in UserDefaults")
+            currentCaregiver = nil
+            return
+        }
+
+        let request: NSFetchRequest<Caregiver> = Caregiver.fetchRequest()
+        request.predicate = NSPredicate(format: "username == %@", loggedInUsername)
+        request.fetchLimit = 1
+
+        do {
+            let caregivers = try context.fetch(request)
+            currentCaregiver = caregivers.first
+            if currentCaregiver == nil {
+                print("No caregiver found for active username: \(loggedInUsername)")
+            }
+        } catch {
+            print("Error loading caregiver by username: \(error)")
+            currentCaregiver = nil
+        }
+    }
+    
+    private func fetchCloudProfileForActiveUser() {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("No Firebase Auth user; skipping cloud profile fetch.")
+            return
+        }
+        Firestore.firestore().collection("users").document(uid).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            if let error = error {
+                print("Cloud profile fetch failed: \(error.localizedDescription)")
+                return
+            }
+            guard let data = snapshot?.data() else {
+                print("No cloud profile found for uid: \(uid)")
+                return
+            }
+            // Map Firestore fields to our cloud profile model
+            let username = data["username"] as? String
+            let firstName = data["firstName"] as? String
+            let lastName = data["lastName"] as? String
+            let email = data["email"] as? String
+            let phoneNumber = data["phoneNumber"] as? String
+            let dob: Date?
+            if let ts = data["dateOfBirth"] as? Timestamp {
+                dob = ts.dateValue()
+            } else {
+                dob = nil
+            }
+            self.cloudProfile = CloudProfile(uid: uid, username: username, firstName: firstName, lastName: lastName, email: email, phoneNumber: phoneNumber, dateOfBirth: dob)
+            DispatchQueue.main.async {
+                self.populateUserInfo()
+            }
+        }
+    }
     
     private func setupUI() {
         title = "Profile"
@@ -188,41 +207,46 @@ class ProfileViewController: UIViewController {
     private func populateUserInfo() {
         // Clear existing rows
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
+
+        // Prefer cloud profile if available
+        if let p = cloudProfile {
+            let fullName = "\(p.firstName ?? "") \(p.lastName ?? "")".trimmingCharacters(in: .whitespaces)
+            addInfoRow(title: "First Name", value: p.firstName)
+            addInfoRow(title: "Last Name", value: p.lastName)
+            addInfoRow(title: "Username", value: p.username)
+            addInfoRow(title: "Email", value: p.email)
+            addInfoRow(title: "Phone Number", value: p.phoneNumber)
+            if let dob = p.dateOfBirth {
+                let fmt = DateFormatter()
+                fmt.dateStyle = .medium
+                addInfoRow(title: "Birthday", value: fmt.string(from: dob))
+            } else {
+                addInfoRow(title: "Birthday", value: "Not set")
+            }
+            let patientsCount = getPatientsCount()
+            addInfoRow(title: "Total Patients", value: "\(patientsCount)")
+            return
+        }
+
+        // Fallback: use local Core Data for the active user only
         guard let caregiver = currentCaregiver else {
-            let noDataRow = createInfoRow(title: "No Data", value: "No caregiver data found")
+            let noDataRow = createInfoRow(title: "No Data", value: "No caregiver data found for the active user")
             stackView.addArrangedSubview(noDataRow)
             return
         }
-        
-        // Debug: Print all the values to see what's actually stored
-        print("=== Caregiver Debug Info ===")
-        print("First Name: '\(caregiver.firstName ?? "nil")'")
-        print("Last Name: '\(caregiver.lastName ?? "nil")'")
-        print("Username: '\(caregiver.username ?? "nil")'")
-        print("Email: '\(caregiver.email ?? "nil")'")
-        print("Phone Number: '\(caregiver.phoneNumber ?? "nil")'")
-        print("Birthday: '\(caregiver.dateOfBirth?.description ?? "nil")'")
-        print("=============================")
-        
-        // Add each field as a separate row - Show actual data, not defaults
+
         addInfoRow(title: "First Name", value: caregiver.firstName)
         addInfoRow(title: "Last Name", value: caregiver.lastName)
         addInfoRow(title: "Username", value: caregiver.username)
         addInfoRow(title: "Email", value: caregiver.email)
         addInfoRow(title: "Phone Number", value: caregiver.phoneNumber)
-        
-        // Add birthday if it exists
         if let birthday = caregiver.dateOfBirth {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
-            let birthdayString = formatter.string(from: birthday)
-            addInfoRow(title: "Birthday", value: birthdayString)
+            addInfoRow(title: "Birthday", value: formatter.string(from: birthday))
         } else {
             addInfoRow(title: "Birthday", value: "Not set")
         }
-        
-        // Add total patients count
         let patientsCount = getPatientsCount()
         addInfoRow(title: "Total Patients", value: "\(patientsCount)")
     }
@@ -323,9 +347,11 @@ class ProfileViewController: UIViewController {
     @objc private func sessionChanged() {
         loadCurrentCaregiver()
         populateUserInfo()
+        fetchCloudProfileForActiveUser()
     }
     
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
 }
+
