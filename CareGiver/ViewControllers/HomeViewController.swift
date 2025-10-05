@@ -390,11 +390,12 @@ class HomeViewController: UIViewController {
             let tabButton = UIButton(type: .system)
             tabButton.setTitle(patient.firstName ?? "Patient \(index + 1)", for: .normal)
             tabButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-            tabButton.backgroundColor = index == selectedPatientIndex ? .systemIndigo : .white
-            tabButton.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
+            let isSelected = (index == selectedPatientIndex)
+            tabButton.backgroundColor = tabBackgroundColor(forSelected: isSelected)
+            tabButton.setTitleColor(tabTextColor(forSelected: isSelected), for: .normal)
             tabButton.layer.cornerRadius = 8
             tabButton.layer.shadowColor = UIColor.black.cgColor
-            tabButton.layer.shadowOpacity = index == selectedPatientIndex ? 0 : 0.1
+            tabButton.layer.shadowOpacity = isSelected ? 0 : cardShadowOpacity()
             tabButton.layer.shadowOffset = CGSize(width: 0, height: 2)
             tabButton.layer.shadowRadius = 4
             tabButton.tag = index
@@ -433,14 +434,24 @@ class HomeViewController: UIViewController {
     private func updateTabAppearance() {
         for (index, view) in patientTabsStackView.arrangedSubviews.enumerated() {
             if let button = view as? UIButton {
-                button.backgroundColor = index == selectedPatientIndex ? .systemIndigo : .white
-                button.setTitleColor(index == selectedPatientIndex ? .white : .label, for: .normal)
+                let isSelected = (index == selectedPatientIndex)
+                button.backgroundColor = tabBackgroundColor(forSelected: isSelected)
+                button.setTitleColor(tabTextColor(forSelected: isSelected), for: .normal)
                 button.layer.shadowColor = UIColor.black.cgColor
-                button.layer.shadowOpacity = index == selectedPatientIndex ? 0 : 0.1
+                button.layer.shadowOpacity = isSelected ? 0 : cardShadowOpacity()
                 button.layer.shadowOffset = CGSize(width: 0, height: 2)
                 button.layer.shadowRadius = 4
             }
         }
+    }
+    
+    // New helper methods for tab colors
+    private func tabBackgroundColor(forSelected selected: Bool) -> UIColor {
+        if selected { return .systemIndigo }
+        return traitCollection.userInterfaceStyle == .dark ? UIColor(white: 0.14, alpha: 1.0) : .white
+    }
+    private func tabTextColor(forSelected selected: Bool) -> UIColor {
+        return selected ? .white : .label
     }
     
     private func showDefaultView() {
@@ -713,10 +724,12 @@ class HomeViewController: UIViewController {
         tasksStackView?.arrangedSubviews.forEach { applyCardStyle(to: $0) }
     }
 
+    // Added call to updateTabAppearance() on dark mode change
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
             updateCardStylesForCurrentAppearance()
+            updateTabAppearance()
         }
     }
     
