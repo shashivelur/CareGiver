@@ -4,6 +4,7 @@ import CoreData
 import MapKit
 import FirebaseCore
 import FirebaseAuth
+import FirebaseFirestore
 
 class HomeViewController: UIViewController {
     
@@ -19,6 +20,8 @@ class HomeViewController: UIViewController {
     private var selectedPatientIndex = 0
     private var patients: [Patient] = []
     private var defaultViewHeightConstraint: NSLayoutConstraint?
+    private var isLoadingPatients = false
+    private var patientsListener: ListenerRegistration?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,13 +36,20 @@ class HomeViewController: UIViewController {
         // Listen for patient creation notifications
         NotificationCenter.default.addObserver(self, selector: #selector(patientCreated), name: NSNotification.Name("PatientCreated"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: NSNotification.Name("SessionChanged"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(patientCreated), name: NSNotification.Name("PatientUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(patientCreated), name: NSNotification.Name("PatientDeleted"), object: nil)
     }
     
     var handle: AuthStateDidChangeListenerHandle?
     
     override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(true)
-        Auth.auth().removeStateDidChangeListener(handle!)
+        super.viewWillDisappear(animated)
+        if let h = handle {
+            Auth.auth().removeStateDidChangeListener(h)
+            handle = nil
+        }
+        patientsListener?.remove()
+        patientsListener = nil
     }
 
     
@@ -48,8 +58,9 @@ class HomeViewController: UIViewController {
         loadPatients()
         checkPatientStatus()
         handle = Auth.auth().addStateDidChangeListener { auth, user in
-          // ...
+            self.startPatientsListener()
         }
+        if Auth.auth().currentUser != nil { startPatientsListener() }
     }
     
 
@@ -69,6 +80,12 @@ class HomeViewController: UIViewController {
         selectedPatientIndex = 0
         loadPatients()
         checkPatientStatus()
+        // Restart cloud listener for the current auth state
+        patientsListener?.remove()
+        patientsListener = nil
+        if Auth.auth().currentUser != nil {
+            startPatientsListener()
+        }
     }
     
     private func getCurrentCaregiver(context: NSManagedObjectContext) -> Caregiver? {
@@ -82,6 +99,28 @@ class HomeViewController: UIViewController {
     }
     
     private func loadPatients() {
+        // Always show local data first for immediate UI updates
+        loadPatientsFromCoreData()
+        checkPatientStatus()
+
+        // Then, if signed into Firebase, fetch cloud in the background and merge into Core Data.
+        // After cloud merge, refresh local data again.
+        guard !isLoadingPatients else { return }
+        isLoadingPatients = true
+
+        if Auth.auth().currentUser != nil {
+            fetchPatientsFromCloud { [weak self] _ in
+                guard let self = self else { return }
+                self.loadPatientsFromCoreData()
+                self.checkPatientStatus()
+                self.isLoadingPatients = false
+            }
+        } else {
+            isLoadingPatients = false
+        }
+    }
+    
+    private func loadPatientsFromCoreData() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
 
@@ -103,6 +142,179 @@ class HomeViewController: UIViewController {
         } else {
             patients = []
             selectedPatientIndex = 0
+        }
+    }
+    
+    private func fetchPatientsFromCloud(completion: @escaping (Bool) -> Void) {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            completion(false)
+            return
+        }
+
+        let db = Firestore.firestore()
+        db.collection("users").document(uid).collection("patients").getDocuments { [weak self] snapshot, error in
+            guard let self = self else { completion(false); return }
+            if let error = error {
+                print("Failed to fetch patients from cloud: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+
+            guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+                completion(false)
+                return
+            }
+            let context = appDelegate.persistentContainer.viewContext
+            guard let caregiver = self.getCurrentCaregiver(context: context) else {
+                completion(false)
+                return
+            }
+
+            let docs = snapshot?.documents ?? []
+            for doc in docs {
+                let data = doc.data()
+                let firstName = (data["firstName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let lastName = (data["lastName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let email = (data["email"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let phone = (data["phoneNumber"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let veteran = (data["veteranStatus"] as? Bool) ?? false
+                let income = (data["incomeRange"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                var dob: Date? = nil
+                if let ts = data["dateOfBirth"] as? Timestamp {
+                    dob = ts.dateValue()
+                }
+                var createdAt: Date? = nil
+                if let ts = data["createdAt"] as? Timestamp {
+                    createdAt = ts.dateValue()
+                }
+
+                // Upsert strategy: prefer email match; else match by (first+last+dob) for this caregiver
+                var existing: Patient? = nil
+                if let email = email, !email.isEmpty {
+                    let req: NSFetchRequest<Patient> = Patient.fetchRequest()
+                    req.predicate = NSPredicate(format: "caregiver == %@ AND email == %@", caregiver, email)
+                    req.fetchLimit = 1
+                    existing = try? context.fetch(req).first
+                }
+                if existing == nil {
+                    // Fallback to name + DOB match for this caregiver
+                    if let first = firstName, let last = lastName, let dob = dob {
+                        let req: NSFetchRequest<Patient> = Patient.fetchRequest()
+                        req.predicate = NSPredicate(format: "caregiver == %@ AND firstName == %@ AND lastName == %@ AND dateOfBirth == %@", caregiver, first, last, dob as NSDate)
+                        req.fetchLimit = 1
+                        existing = try? context.fetch(req).first
+                    }
+                }
+
+                if let patient = existing {
+                    // Local-wins during manual fetch to avoid clobbering just-edited data
+                    if patient.createdAt == nil { patient.createdAt = createdAt ?? patient.createdAt }
+                    patient.caregiver = caregiver
+                } else {
+                    let patient = Patient(context: context)
+                    patient.firstName = firstName
+                    patient.lastName = lastName
+                    patient.email = email
+                    patient.phoneNumber = phone
+                    patient.dateOfBirth = dob
+                    patient.veteranStatus = veteran
+                    patient.incomeRange = income
+                    patient.createdAt = createdAt ?? Date()
+                    patient.caregiver = caregiver
+                }
+            }
+
+            do {
+                try context.save()
+                completion(true)
+            } catch {
+                print("Failed to upsert cloud patients into Core Data: \(error)")
+                completion(false)
+            }
+        }
+    }
+    
+    private func startPatientsListener() {
+        patientsListener?.remove()
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        patientsListener = db.collection("users").document(uid).collection("patients")
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                if let error = error {
+                    print("Patients snapshot listener error: \(error.localizedDescription)")
+                    return
+                }
+                guard let snapshot = snapshot else { return }
+                self.applyPatientChanges(from: snapshot)
+            }
+    }
+    
+    private func applyPatientChanges(from snapshot: QuerySnapshot) {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let context = appDelegate.persistentContainer.viewContext
+        guard let caregiver = getCurrentCaregiver(context: context) else { return }
+
+        for change in snapshot.documentChanges {
+            let data = change.document.data()
+            let firstName = (data["firstName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lastName = (data["lastName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let email = (data["email"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let phone = (data["phoneNumber"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let veteran = (data["veteranStatus"] as? Bool) ?? false
+            let income = (data["incomeRange"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            var dob: Date? = nil
+            if let ts = data["dateOfBirth"] as? Timestamp { dob = ts.dateValue() }
+            var createdAt: Date? = nil
+            if let ts = data["createdAt"] as? Timestamp { createdAt = ts.dateValue() }
+
+            // Find existing patient by email or (name + DOB) for this caregiver
+            var existing: Patient? = nil
+            if let email = email, !email.isEmpty {
+                let req: NSFetchRequest<Patient> = Patient.fetchRequest()
+                req.predicate = NSPredicate(format: "caregiver == %@ AND email == %@", caregiver, email)
+                req.fetchLimit = 1
+                existing = try? context.fetch(req).first
+            }
+            if existing == nil, let first = firstName, let last = lastName, let dob = dob {
+                let req: NSFetchRequest<Patient> = Patient.fetchRequest()
+                req.predicate = NSPredicate(format: "caregiver == %@ AND firstName == %@ AND lastName == %@ AND dateOfBirth == %@", caregiver, first, last, dob as NSDate)
+                req.fetchLimit = 1
+                existing = try? context.fetch(req).first
+            }
+
+            switch change.type {
+            case .added, .modified:
+                let patient = existing ?? Patient(context: context)
+                // Cloud-wins for live listener so remote edits are visible
+                patient.firstName = firstName
+                patient.lastName = lastName
+                patient.email = email
+                patient.phoneNumber = phone
+                patient.dateOfBirth = dob
+                patient.veteranStatus = veteran
+                patient.incomeRange = income
+                if patient.createdAt == nil { patient.createdAt = createdAt ?? Date() }
+                patient.caregiver = caregiver
+            case .removed:
+                if let toDelete = existing {
+                    context.delete(toDelete)
+                }
+            @unknown default:
+                break
+            }
+        }
+
+        do {
+            try context.save()
+            DispatchQueue.main.async {
+                self.loadPatientsFromCoreData()
+                self.checkPatientStatus()
+            }
+        } catch {
+            print("Failed to apply patient changes from listener: \(error)")
         }
     }
     
@@ -797,6 +1009,7 @@ class AddPatientViewController: UIViewController {
             
             do {
                 try context.save()
+                PatientCloudSync.upsertPatient(patient)
                 print("Patient saved successfully with income: \(selectedIncome)")
                 
                 NotificationCenter.default.post(name: NSNotification.Name("PatientCreated"), object: nil)
@@ -814,3 +1027,38 @@ class AddPatientViewController: UIViewController {
     }
 }
 
+
+// --- Assuming EditPatientViewController exists in this file ---
+// Insert the following modification in EditPatientViewController's saveTapped method:
+/*
+    do {
+        try context.save()
+        PatientCloudSync.upsertPatient(self.patient)
+        NotificationCenter.default.post(name: NSNotification.Name("PatientUpdated"), object: nil)
+        dismiss(animated: true)
+    } catch {
+        showAlert(message: error.localizedDescription)
+    }
+*/
+
+// --- Assuming SettingsViewController exists in this file ---
+// Modify the deletePatient(_:) method as follows:
+
+/*
+private func deletePatient(_ patient: Patient) {
+    guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+    let context = appDelegate.persistentContainer.viewContext
+    
+    let objectID = patient.objectID
+    
+    context.delete(patient)
+    
+    do {
+        try context.save()
+        PatientCloudSync.deletePatient(with: objectID)
+        NotificationCenter.default.post(name: NSNotification.Name("PatientDeleted"), object: nil)
+    } catch {
+        print("Failed to delete patient: \(error)")
+    }
+}
+*/

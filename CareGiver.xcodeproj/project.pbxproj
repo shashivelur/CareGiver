@@ -32,6 +32,7 @@
 		615A4F8D2E8F383300451009 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 615A4F8C2E8F383300451009 /* FirebaseFirestore */; };
 		615A4F8F2E8F58C600451009 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 615A4F8E2E8F58C600451009 /* FirebaseStorage */; };
 		615A4F912E90C5A300451009 /* FirebaseUserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615A4F902E90C5A300451009 /* FirebaseUserService.swift */; };
+		61692B832E91FF7400FCDAA8 /* PatientCloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		61A3FD072E81B3DF0054301E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A3FD062E81B3DF0054301E /* Theme.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
@@ -88,6 +89,7 @@
 		615A4F7F2E838B2500451009 /* BiometricAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthManager.swift; sourceTree = "<group>"; };
 		615A4F852E8F379D00451009 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		615A4F902E90C5A300451009 /* FirebaseUserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseUserService.swift; sourceTree = "<group>"; };
+		61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientCloudSync.swift; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
 		61A3FD062E81B3DF0054301E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -226,6 +228,7 @@
 				A1B2C3D4E625 /* ReportsViewController.swift */,
 				A1B2C3D4E627 /* HelpViewController.swift */,
 				615A4F7F2E838B2500451009 /* BiometricAuthManager.swift */,
+				61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -350,6 +353,7 @@
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
 				E67EF1902E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
+				61692B832E91FF7400FCDAA8 /* PatientCloudSync.swift in Sources */,
 				332D9AE62E898F7300C7224B /* BeaconAnnotation.swift in Sources */,
 				332D9AE72E898F7300C7224B /* BeaconDevice.swift in Sources */,
 				A1B2C3D4E604 /* MainTabBarController.swift in Sources */,
