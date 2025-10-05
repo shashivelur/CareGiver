@@ -205,17 +205,16 @@ class DatePickerViewController: UIViewController {
 }
 
 // MARK: - Main ViewController
-import UIKit
 
 class CalendarViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UICalendarSelectionSingleDateDelegate {
-    var tempTaskTitle: String?
-    var tempStartTimeText: String?
-    var tempEndTimeText: String?
-    var tempStartLocation: String?
-    var tempDestination: String?
-    var tempDescription: String?
-    var tempTrustedPeople: [TrustedPerson] = []
-    var notificationMinutesBefore: Int = 10 // default 10 minutes before
+    var tempTaskTitle: String? { didSet { saveHighlightingData() } }
+    var tempStartTimeText: String? { didSet { saveTaskEditData() } }
+    var tempEndTimeText: String? { didSet { saveTaskEditData() } }
+    var tempStartLocation: String? { didSet { saveTaskEditData() } }
+    var tempDestination: String? { didSet { saveTaskEditData() } }
+    var tempDescription: String? { didSet { saveTaskEditData() } }
+    var tempTrustedPeople: [TrustedPerson] = [] { didSet { saveTaskEditData() } }
+    var notificationMinutesBefore: Int = 10 { didSet { saveHighlightingData() } } // default 10 minutes before
 
 
     let calendarView = UICalendarView()
@@ -225,7 +224,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     let addTaskButton = UIButton(type: .system)
     private var topBar: UIView!
     var currentSelectedDate = Date()
-    var tempDateText: String?
+    var tempDateText: String? { didSet { saveHighlightingData() } }
     private var dayNavigationStack: UIStackView!
     var currentCaregiver: Caregiver?
     
@@ -277,8 +276,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     private var taskEventIdByKey: [String: String] = [:]
 
     // Store selected time values and which field was tapped
-    var selectedStartTime: Date?
-    var selectedEndTime: Date?
+    var selectedStartTime: Date? { didSet { saveHighlightingData() } }
+    var selectedEndTime: Date? { didSet { saveHighlightingData() } }
     var activeTimeField: UITextField?
 
     var combinedDayTasks: [String] {
@@ -312,6 +311,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         loadTasks()
         loadEventIds()
         loadNotificationDuration()
+        
+        // Load highlighting and task edit data
+        loadHighlightingData()
+        loadTaskEditData()
         
         // Observe app lifecycle events
         NotificationCenter.default.addObserver(
@@ -1278,8 +1281,102 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         notificationMinutesBefore = UserDefaults.standard.object(forKey: "notification_duration") as? Int ?? 10
     }
     
+    // MARK: - Highlighting & Task Edit Persistence
+    private func saveHighlightingData() {
+        var highlightingData: [String: Any] = [:]
+        
+        if let tempTaskTitle = tempTaskTitle {
+            highlightingData["tempTaskTitle"] = tempTaskTitle
+        }
+        
+        if let tempDateText = tempDateText {
+            highlightingData["tempDateText"] = tempDateText
+        }
+        
+        if let selectedStartTime = selectedStartTime {
+            highlightingData["selectedStartTime"] = selectedStartTime.timeIntervalSince1970
+        }
+        
+        if let selectedEndTime = selectedEndTime {
+            highlightingData["selectedEndTime"] = selectedEndTime.timeIntervalSince1970
+        }
+        
+        highlightingData["notificationMinutesBefore"] = notificationMinutesBefore
+        
+        UserDefaults.standard.set(highlightingData, forKey: "highlighting_data")
+    }
+    
+    private func loadHighlightingData() {
+        let highlightingData = UserDefaults.standard.dictionary(forKey: "highlighting_data")
+        
+        tempTaskTitle = highlightingData?["tempTaskTitle"] as? String
+        tempDateText = highlightingData?["tempDateText"] as? String
+        
+        if let startTimeInterval = highlightingData?["selectedStartTime"] as? TimeInterval {
+            selectedStartTime = Date(timeIntervalSince1970: startTimeInterval)
+        }
+        
+        if let endTimeInterval = highlightingData?["selectedEndTime"] as? TimeInterval {
+            selectedEndTime = Date(timeIntervalSince1970: endTimeInterval)
+        }
+        
+        if let minutes = highlightingData?["notificationMinutesBefore"] as? Int {
+            notificationMinutesBefore = minutes
+        }
+    }
+    
+    private func saveTaskEditData() {
+        var taskEditData: [String: Any] = [:]
+        
+        if let tempStartTimeText = tempStartTimeText {
+            taskEditData["tempStartTimeText"] = tempStartTimeText
+        }
+        
+        if let tempEndTimeText = tempEndTimeText {
+            taskEditData["tempEndTimeText"] = tempEndTimeText
+        }
+        
+        if let tempStartLocation = tempStartLocation {
+            taskEditData["tempStartLocation"] = tempStartLocation
+        }
+        
+        if let tempDestination = tempDestination {
+            taskEditData["tempDestination"] = tempDestination
+        }
+        
+        if let tempDescription = tempDescription {
+            taskEditData["tempDescription"] = tempDescription
+        }
+        
+        UserDefaults.standard.set(taskEditData, forKey: "task_edit_data")
+        
+        // Save trusted people as JSON
+        if let trustedPeopleData = try? JSONEncoder().encode(tempTrustedPeople) {
+            UserDefaults.standard.set(trustedPeopleData, forKey: "temp_trusted_people")
+        }
+    }
+    
+    private func loadTaskEditData() {
+        let taskEditData = UserDefaults.standard.dictionary(forKey: "task_edit_data")
+        
+        tempStartTimeText = taskEditData?["tempStartTimeText"] as? String
+        tempEndTimeText = taskEditData?["tempEndTimeText"] as? String
+        tempStartLocation = taskEditData?["tempStartLocation"] as? String
+        tempDestination = taskEditData?["tempDestination"] as? String
+        tempDescription = taskEditData?["tempDescription"] as? String
+        
+        // Load trusted people from JSON
+        if let trustedPeopleData = UserDefaults.standard.data(forKey: "temp_trusted_people"),
+           let trustedPeople = try? JSONDecoder().decode([TrustedPerson].self, from: trustedPeopleData) {
+            tempTrustedPeople = trustedPeople
+        }
+    }
+    
     @objc private func appWillResignActive() {
         // Tasks are now automatically saved via didSet observers
+        // Save highlighting and task edit data
+        saveHighlightingData()
+        saveTaskEditData()
     }
 
 	@objc private func appDidBecomeActive() {
@@ -1404,24 +1501,25 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             }
             return cell
         }
-// Helper to get all tasks for a specific date as (start, end) tuples for DayTimelineView
-func timelineTasks(for date: Date) -> [(start: Date, end: Date)] {
-    let dateKey = stringFromDate(date)
-    guard let tasksByHour = tasksByDateAndHour[dateKey] else { return [] }
-    var result: [(start: Date, end: Date)] = []
-    let calendar = Calendar.current
-    let today = calendar.startOfDay(for: date)
-    for (hour, titles) in tasksByHour {
-        for _ in titles {
-            // For demo, assume each task is 1 hour. You can adjust as needed.
-            if let start = calendar.date(byAdding: .hour, value: hour, to: today),
-               let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
-                result.append((start: start, end: end))
+    }
+    
+    // Helper to get all tasks for a specific date as (start, end) tuples for DayTimelineView
+    func timelineTasks(for date: Date) -> [(start: Date, end: Date)] {
+        let dateKey = stringFromDate(date)
+        guard let tasksByHour = tasksByDateAndHour[dateKey] else { return [] }
+        var result: [(start: Date, end: Date)] = []
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: date)
+        for (hour, titles) in tasksByHour {
+            for _ in titles {
+                // For demo, assume each task is 1 hour. You can adjust as needed.
+                if let start = calendar.date(byAdding: .hour, value: hour, to: today),
+                   let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
+                    result.append((start: start, end: end))
+                }
             }
         }
-    }
-    return result
-}
+        return result
     }
 }
 
