@@ -1,4 +1,5 @@
 import UIKit
+import FirebaseAuth
 import CoreData
 import CryptoKit
 import PhotosUI
@@ -185,11 +186,29 @@ class SettingsViewController: UIViewController {
     private func deletePatient(_ patient: Patient) {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
+
+        // Precompute Firestore ids before the object is invalidated
+        var stableId: String?
+        var legacyId: String?
+        var uid: String?
+        if let currentUid = Auth.auth().currentUser?.uid {
+            uid = currentUid
+            stableId = PatientCloudSync.stablePatientDocId(for: patient, uid: currentUid)
+            legacyId = PatientCloudSync.patientDocId(for: patient.objectID)
+        }
+
         context.delete(patient)
         do {
             try context.save()
+            // Delete in cloud using precomputed ids if available
+            if let sid = stableId, let userId = uid {
+                PatientCloudSync.deletePatientByIds(stableId: sid, legacyId: legacyId, uid: userId)
+            } else {
+                // Fallback: attempt legacy deletion via objectID (no-op if no auth)
+                PatientCloudSync.deletePatient(with: patient.objectID)
+            }
             // Notify other screens to refresh
-            NotificationCenter.default.post(name: NSNotification.Name("PatientCreated"), object: nil)
+            NotificationCenter.default.post(name: NSNotification.Name("PatientDeleted"), object: nil)
         } catch {
             let alert = UIAlertController(title: "Error", message: "Failed to delete patient: \(error.localizedDescription)", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default))
@@ -955,7 +974,8 @@ final class EditPatientViewController: UIViewController {
 
         do {
             try context.save()
-            NotificationCenter.default.post(name: NSNotification.Name("PatientCreated"), object: nil)
+            PatientCloudSync.upsertPatient(self.patient)
+            NotificationCenter.default.post(name: NSNotification.Name("PatientUpdated"), object: nil)
             navigationController?.popViewController(animated: true)
         } catch {
             let alert = UIAlertController(title: "Error", message: "Failed to save changes: \(error.localizedDescription)", preferredStyle: .alert)
