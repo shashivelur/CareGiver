@@ -12,6 +12,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        // Install listener to flush any pending profile photo uploads on sign-in
+        ProfilePhotoService.installAuthListener()
+        // If already signed in, attempt any pending upload for the active session username
+        if let username = UserDefaults.standard.string(forKey: "LoggedInUsername"), Auth.auth().currentUser != nil {
+            ProfilePhotoService.tryUploadPendingIfAny(for: username)
+        }
         return true
     }
 

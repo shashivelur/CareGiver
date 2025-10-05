@@ -33,6 +33,8 @@
 		615A4F8F2E8F58C600451009 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 615A4F8E2E8F58C600451009 /* FirebaseStorage */; };
 		615A4F912E90C5A300451009 /* FirebaseUserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 615A4F902E90C5A300451009 /* FirebaseUserService.swift */; };
 		61692B832E91FF7400FCDAA8 /* PatientCloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */; };
+		61692B852E9221E700FCDAA8 /* ProfilePhotoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61692B842E9221E700FCDAA8 /* ProfilePhotoService.swift */; };
+		61692B872E92A45700FCDAA8 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 61692B862E92A45700FCDAA8 /* FirebaseStorage */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		61A3FD072E81B3DF0054301E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A3FD062E81B3DF0054301E /* Theme.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
@@ -90,6 +92,7 @@
 		615A4F852E8F379D00451009 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		615A4F902E90C5A300451009 /* FirebaseUserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseUserService.swift; sourceTree = "<group>"; };
 		61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientCloudSync.swift; sourceTree = "<group>"; };
+		61692B842E9221E700FCDAA8 /* ProfilePhotoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePhotoService.swift; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
 		61A3FD062E81B3DF0054301E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -135,6 +138,7 @@
 				6111DB122E6DCF7600D0DE04 /* SideMenu in Frameworks */,
 				615A4F892E8F383300451009 /* FirebaseAnalytics in Frameworks */,
 				615A4F8D2E8F383300451009 /* FirebaseFirestore in Frameworks */,
+				61692B872E92A45700FCDAA8 /* FirebaseStorage in Frameworks */,
 				615A4F8B2E8F383300451009 /* FirebaseAuth in Frameworks */,
 				615A4F8F2E8F58C600451009 /* FirebaseStorage in Frameworks */,
 			);
@@ -229,6 +233,7 @@
 				A1B2C3D4E627 /* HelpViewController.swift */,
 				615A4F7F2E838B2500451009 /* BiometricAuthManager.swift */,
 				61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */,
+				61692B842E9221E700FCDAA8 /* ProfilePhotoService.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -379,6 +384,7 @@
 				5CC275B42E526E7A003408F7 /* HourTaskCell.swift in Sources */,
 				A1B2C3D4E680 /* FinancialAssistanceViewController.swift in Sources */,
 				6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */,
+				61692B852E9221E700FCDAA8 /* ProfilePhotoService.swift in Sources */,
 				A1B2C3D4E628 /* CareGiver.xcdatamodeld in Sources */,
 				5CC275B22E526E6F003408F7 /* DayTimelineView.swift in Sources */,
 				A1B2C3D4E631 /* CoreDataManager.swift in Sources */,
@@ -678,6 +684,11 @@
 			productName = FirebaseFirestore;
 		};
 		615A4F8E2E8F58C600451009 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 615A4F872E8F383300451009 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		61692B862E92A45700FCDAA8 /* FirebaseStorage */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 615A4F872E8F383300451009 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
