@@ -1,5 +1,7 @@
 import UIKit
 import PhotosUI
+import FirebaseAuth
+import FirebaseFirestore
 
 // MARK: - Model
 struct Report: Codable {
@@ -17,6 +19,7 @@ class ReportsManager {
 
     private let reportsKey = "savedReports"
     var reports: [Report] = []
+    private var cloudIdsByIndex: [Int: String] = [:]
 
     func saveReports() {
         if let data = try? JSONEncoder().encode(reports) {
@@ -29,6 +32,12 @@ class ReportsManager {
            let savedReports = try? JSONDecoder().decode([Report].self, from: data) {
             self.reports = savedReports
         }
+    }
+
+    func replaceWithCloudReports(_ items: [(id: String, report: Report)]) {
+        self.reports = items.map { $0.report }
+        self.cloudIdsByIndex = Dictionary(uniqueKeysWithValues: items.enumerated().map { ($0.offset, $0.element.id) })
+        saveReports()
     }
 }
 
@@ -47,6 +56,7 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
         setupUI()
         setupTableView()
         updateEmptyState()
+        loadReportsFromCloud()
     }
 
     private func setupUI() {
@@ -232,6 +242,17 @@ class ReportsViewController: UIViewController, UITableViewDataSource, UITableVie
             tableView.backgroundView = nil
         }
     }
+
+    private func loadReportsFromCloud() {
+        guard Auth.auth().currentUser != nil else { return }
+        ReportsCloudSync.fetchReports { [weak self] items in
+            DispatchQueue.main.async {
+                ReportsManager.shared.replaceWithCloudReports(items)
+                self?.tableView.reloadData()
+                self?.updateEmptyState()
+            }
+        }
+    }
 }
 
 // MARK: - Report Editor with Photos
@@ -340,6 +361,8 @@ class ReportEditorViewController: UIViewController, PHPickerViewControllerDelega
             isReviewed: report?.isReviewed ?? false,
             images: imageDataArray
         )
+        
+        ReportsCloudSync.createReport(newReport)
         
         onSave?(newReport)
         ReportsManager.shared.saveReports()
