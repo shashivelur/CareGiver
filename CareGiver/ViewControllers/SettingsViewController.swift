@@ -1,5 +1,7 @@
 import UIKit
 import FirebaseAuth
+import FirebaseStorage
+import FirebaseFirestore
 import CoreData
 import CryptoKit
 import PhotosUI
@@ -13,6 +15,7 @@ class SettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        ProfilePhotoService.installAuthListener()
     }
     
     private func setupUI() {
@@ -109,6 +112,55 @@ class SettingsViewController: UIViewController {
             }
             NotificationCenter.default.post(name: .SessionChanged, object: nil)
             NotificationCenter.default.post(name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+        }
+        // Trigger an immediate attempt to flush any pending upload if we're signed in
+        ProfilePhotoService.tryUploadAnyPendingForCurrentUser()
+        
+        // If not signed in to Firebase, queue for later upload and return (local save remains in place)
+        if Auth.auth().currentUser?.uid == nil {
+            let defaults = UserDefaults.standard
+            let resolvedUsername: String? = defaults.string(forKey: "LoggedInUsername") ?? self.getCurrentCaregiver()?.username
+            if let username = resolvedUsername, !username.isEmpty {
+                ProfilePhotoService.queuePending(image, for: username)
+            }
+            return
+        }
+        
+        // Mirror to Firebase (best-effort). Local cache remains the source of truth if cloud fails.
+        ProfilePhotoService.uploadProfilePhoto(image) { result in
+            switch result {
+            case .success(let url):
+                // Persist the URL per user (if we know the username) and mirror to a legacy global key
+                if let username = UserDefaults.standard.string(forKey: "LoggedInUsername") {
+                    let defaults = UserDefaults.standard
+                    defaults.set(url.absoluteString, forKey: "CaregiverProfileImageURL_\(username)")
+                    defaults.set(url.absoluteString, forKey: "CaregiverProfileImageURL")
+                    defaults.synchronize()
+                } else {
+                    UserDefaults.standard.set(url.absoluteString, forKey: "CaregiverProfileImageURL")
+                }
+                // Notify so any views relying on URL can refresh
+                NotificationCenter.default.post(name: .SessionChanged, object: nil)
+                NotificationCenter.default.post(name: NSNotification.Name("ProfilePhotoUpdated"), object: nil)
+            case .failure(let error):
+                // Keep local fallback; queue pending for retry when connectivity/auth returns
+                print("Profile photo cloud upload failed: \(error)")
+                let defaults = UserDefaults.standard
+                let resolvedUsername: String? = defaults.string(forKey: "LoggedInUsername") ?? self.getCurrentCaregiver()?.username
+                if let username = resolvedUsername, !username.isEmpty {
+                    ProfilePhotoService.queuePending(image, for: username)
+                }
+                // If we're signed in, schedule a quick retry to flush the pending upload
+                if Auth.auth().currentUser != nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                        if let username = resolvedUsername, !username.isEmpty {
+                            ProfilePhotoService.tryUploadPendingIfAny(for: username, completion: nil)
+                        } else {
+                            ProfilePhotoService.tryUploadAnyPendingForCurrentUser()
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -578,6 +630,19 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
                     defaults.removeObject(forKey: oldKey)
                 } else if let global = defaults.data(forKey: "CaregiverProfileImageData") {
                     defaults.set(global, forKey: newKey)
+                }
+            }
+            
+            // Migrate per-user profile photo URL key as well
+            if let old = oldUsername, !old.isEmpty {
+                let oldURLKey = "CaregiverProfileImageURL_\(old)"
+                let newURLKey = "CaregiverProfileImageURL_\(newUsername)"
+                if let url = defaults.string(forKey: oldURLKey) {
+                    defaults.set(url, forKey: newURLKey)
+                    defaults.set(url, forKey: "CaregiverProfileImageURL")
+                    defaults.removeObject(forKey: oldURLKey)
+                } else if let globalURL = defaults.string(forKey: "CaregiverProfileImageURL") {
+                    defaults.set(globalURL, forKey: newURLKey)
                 }
             }
             // Notify session change so UI can refresh and SceneDelegate can sync
