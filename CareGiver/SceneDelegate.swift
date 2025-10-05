@@ -22,6 +22,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = root
             self.window = window
             window.makeKeyAndVisible()
+            applySavedAppearance(for: windowScene)
             
             // Keep legacy global profile image key in sync with the logged-in user
             NotificationCenter.default.addObserver(self, selector: #selector(syncLegacyProfileImageKey), name: .SessionChanged, object: nil)
@@ -38,6 +39,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidBecomeActive(_ scene: UIScene) {
         syncLegacyProfileImageKey()
+        if let ws = scene as? UIWindowScene {
+            applySavedAppearance(for: ws)
+        }
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
     }
@@ -73,6 +77,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             // Clear legacy key if no per-user image exists to avoid leaking previous user's photo
             defaults.removeObject(forKey: "CaregiverProfileImageData")
         }
+    }
+    
+    private func applySavedAppearance(for windowScene: UIWindowScene) {
+        let defaults = UserDefaults.standard
+        // Only apply if the user has explicitly set a preference
+        guard defaults.object(forKey: "AppDarkModeEnabled") != nil else { return }
+        let dark = defaults.bool(forKey: "AppDarkModeEnabled")
+        let style: UIUserInterfaceStyle = dark ? .dark : .light
+        windowScene.windows.forEach { $0.overrideUserInterfaceStyle = style }
     }
 }
 
