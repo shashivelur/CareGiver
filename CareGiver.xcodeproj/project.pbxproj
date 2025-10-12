@@ -36,6 +36,8 @@
 		61692B852E9221E700FCDAA8 /* ProfilePhotoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61692B842E9221E700FCDAA8 /* ProfilePhotoService.swift */; };
 		61692B872E92A45700FCDAA8 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 61692B862E92A45700FCDAA8 /* FirebaseStorage */; };
 		61692B892E92B00100FCDAA8 /* ReportsCloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61692B882E92B00100FCDAA8 /* ReportsCloudSync.swift */; };
+		618779BD2E9C6D950063EFAD /* Hashing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618779BC2E9C6D950063EFAD /* Hashing.swift */; };
+		618779BF2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618779BE2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		61A3FD072E81B3DF0054301E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A3FD062E81B3DF0054301E /* Theme.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
@@ -95,6 +97,8 @@
 		61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientCloudSync.swift; sourceTree = "<group>"; };
 		61692B842E9221E700FCDAA8 /* ProfilePhotoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePhotoService.swift; sourceTree = "<group>"; };
 		61692B882E92B00100FCDAA8 /* ReportsCloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsCloudSync.swift; sourceTree = "<group>"; };
+		618779BC2E9C6D950063EFAD /* Hashing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hashing.swift; sourceTree = "<group>"; };
+		618779BE2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PatientCloudSync+Hashing.swift"; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
 		61A3FD062E81B3DF0054301E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -237,6 +241,8 @@
 				61692B822E91FF7400FCDAA8 /* PatientCloudSync.swift */,
 				61692B842E9221E700FCDAA8 /* ProfilePhotoService.swift */,
 				61692B882E92B00100FCDAA8 /* ReportsCloudSync.swift */,
+				618779BC2E9C6D950063EFAD /* Hashing.swift */,
+				618779BE2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -363,6 +369,7 @@
 				E67EF1902E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,
 				61692B832E91FF7400FCDAA8 /* PatientCloudSync.swift in Sources */,
+				618779BF2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift in Sources */,
 				332D9AE62E898F7300C7224B /* BeaconAnnotation.swift in Sources */,
 				332D9AE72E898F7300C7224B /* BeaconDevice.swift in Sources */,
 				A1B2C3D4E604 /* MainTabBarController.swift in Sources */,
@@ -379,6 +386,7 @@
 				A1B2C3D4E618 /* ProfileViewController.swift in Sources */,
 				615A4F802E838B2500451009 /* BiometricAuthManager.swift in Sources */,
 				5CC275B02E526E5C003408F7 /* TaskListCell.swift in Sources */,
+				618779BD2E9C6D950063EFAD /* Hashing.swift in Sources */,
 				A1B2C3D4E620 /* SettingsViewController.swift in Sources */,
 				A1B2C3D4E622 /* NotificationsViewController.swift in Sources */,
 				E67EF1822E77695C0086D673 /* GovernmentAidWebViewController.swift in Sources */,

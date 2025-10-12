@@ -3,7 +3,6 @@ import FirebaseAuth
 import FirebaseStorage
 import FirebaseFirestore
 import CoreData
-import CryptoKit
 import PhotosUI
 import LocalAuthentication
 
@@ -46,18 +45,6 @@ class SettingsViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-    }
-    
-    // Add the sha256 function for password hashing
-    private func sha256(for string: String) -> String? {
-        guard let inputData = string.data(using: .utf8) else {
-            print("Error: Could not convert string to Data.")
-            return nil
-        }
-        
-        let digest = SHA256.hash(data: inputData)
-        let hexString = digest.compactMap { String(format: "%02x", $0) }.joined()
-        return hexString
     }
     
     // Get current caregiver from Core Data
@@ -512,7 +499,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         }
         
         // Hash the current password to verify it matches
-        guard let hashedCurrentPassword = sha256(for: currentPassword) else {
+        guard let hashedCurrentPassword = HasherUtil.sha256(currentPassword) else {
             showAlert(message: "Error processing current password")
             return
         }
@@ -524,7 +511,7 @@ extension SettingsViewController: UITableViewDataSource, UITableViewDelegate {
         }
         
         // Hash the new password
-        guard let hashedNewPassword = sha256(for: newPassword) else {
+        guard let hashedNewPassword = HasherUtil.sha256(newPassword) else {
             showAlert(message: "Error processing new password")
             return
         }
