@@ -95,12 +95,12 @@ class TrackingViewController: UIViewController {
             mapView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            mapView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
             devicesTableView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
             devicesTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             devicesTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            devicesTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            devicesTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }
     
