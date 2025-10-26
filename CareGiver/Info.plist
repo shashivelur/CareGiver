@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -23,20 +21,7 @@
 			</array>
 		</dict>
 	</dict>
-  <!-- Location Permissions -->
-  <key>NSLocationWhenInUseUsageDescription</key>
-  <string>This app needs location access to detect iBeacon devices and show them on the map.</string>
-  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-  <string>This app needs location access to track iBeacon devices even when the app is in the background.</string>
-  <!-- Bluetooth Permissions -->
-  <key>NSBluetoothPeripheralUsageDescription</key>
-  <string>This app needs Bluetooth access to detect iBeacon devices and other BLE devices.</string>
-  <key>NSBluetoothAlwaysUsageDescription</key>
-  <string>This app needs Bluetooth access to detect iBeacon devices and other BLE devices.</string>
-  <!-- Privacy settings -->
-  <key>ITSAppUsesNonExemptEncryption</key>
-  <false/>
-  <key>UIBackgroundModes</key>
+	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
 		<string>location</string>
@@ -44,7 +29,5 @@
 		<string>nearby-interaction</string>
 		<string>external-accessory</string>
 	</array>
-	<key>NSCalendarsUsageDescription</key>
-	<string>This app adds and updates your caregiving tasks in Calendar.</string>
 </dict>
 </plist>
