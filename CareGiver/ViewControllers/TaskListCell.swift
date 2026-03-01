@@ -1,7 +1,7 @@
 import UIKit
 
 protocol TaskListCellDelegate: AnyObject {
-    func didRequestDelete(task: String)
+    func didRequestDelete(task: String, atFlatIndex: Int)
     func didCompleteTask(task: String)
     func didUncompleteTask(task: String)
     func didRequestEdit(task: String)
@@ -134,8 +134,14 @@ class TaskListCell: UITableViewCell {
             return UIMenu(title: "", children: [completedAction])
         }
 
-        let delete = UIAction(title: "Delete", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
-            self.delegate?.didRequestDelete(task: taskToDelete)
+        let delete = UIAction(title: "Delete", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            let delegate = self.delegate
+            let task = taskToDelete
+            let idx = index
+            DispatchQueue.main.async {
+                delegate?.didRequestDelete(task: task, atFlatIndex: idx)
+            }
         }
 
         let edit = UIAction(title: "Edit", image: UIImage(systemName: "pencil")) { _ in

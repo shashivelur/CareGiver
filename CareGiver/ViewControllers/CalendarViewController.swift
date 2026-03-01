@@ -652,7 +652,22 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 self.tasksByDateAndHour[dateKey]?[hour] = [title]
             }
 
-            if let startTime = self.selectedStartTime {
+            // Build start/end dates using the selected date (from tempDateText), not today
+            let calendar = Calendar.current
+            var startTimeForNotification: Date?
+            var startTimeForCalendar: Date?
+            var endTimeForCalendar: Date?
+            if let start = self.selectedStartTime, let end = self.selectedEndTime {
+                let startHour = calendar.component(.hour, from: start)
+                let startMinute = calendar.component(.minute, from: start)
+                let endHour = calendar.component(.hour, from: end)
+                let endMinute = calendar.component(.minute, from: end)
+                startTimeForNotification = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: selectedDate)
+                startTimeForCalendar = startTimeForNotification
+                endTimeForCalendar = calendar.date(bySettingHour: endHour, minute: endMinute, second: 0, of: selectedDate)
+            }
+
+            if let startTime = startTimeForNotification {
                 self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
             }
             
@@ -661,8 +676,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 self.sendTaskAssignmentNotification(taskTitle: title, assignedPeople: self.tempTrustedPeople)
             }
             
-            // Add to Apple Calendar
-            if let startTime = self.selectedStartTime, let endTime = self.selectedEndTime {
+            // Add to Apple Calendar (use dates on the selected day, not today)
+            if let startTime = startTimeForCalendar, let endTime = endTimeForCalendar {
                 self.addTaskToAppleCalendar(
                     title: title,
                     startTime: startTime,
@@ -1259,7 +1274,26 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             tasksByDateAndHour[dateKey]?[hour] = [title]
         }
 
-        if let startTime = startTime {
+        // Use the selected date (from dateKey), not today, for notifications and Apple Calendar
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        guard let selectedDate = dateFormatter.date(from: dateKey) else { return }
+
+        let calendar = Calendar.current
+        var startTimeForNotification: Date?
+        var startTimeForCalendar: Date?
+        var endTimeForCalendar: Date?
+        if let start = startTime, let end = endTime {
+            let startHour = calendar.component(.hour, from: start)
+            let startMinute = calendar.component(.minute, from: start)
+            let endHour = calendar.component(.hour, from: end)
+            let endMinute = calendar.component(.minute, from: end)
+            startTimeForNotification = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: selectedDate)
+            startTimeForCalendar = startTimeForNotification
+            endTimeForCalendar = calendar.date(bySettingHour: endHour, minute: endMinute, second: 0, of: selectedDate)
+        }
+
+        if let startTime = startTimeForNotification {
             scheduleTaskNotification(title: title, date: startTime, minutesBefore: notificationMinutesBefore)
         }
         
@@ -1268,8 +1302,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             sendTaskAssignmentNotification(taskTitle: title, assignedPeople: trustedPeople)
         }
         
-        // Add to Apple Calendar
-        if let startTime = startTime, let endTime = endTime {
+        // Add to Apple Calendar (use dates on the selected day, not today)
+        if let startTime = startTimeForCalendar, let endTime = endTimeForCalendar {
             addTaskToAppleCalendar(title: title, startTime: startTime, endTime: endTime, description: description ?? "", dateKey: dateKey, hour: hour)
         }
         
@@ -1453,51 +1487,14 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             let cell = tableView.dequeueReusableCell(withIdentifier: "HourTaskCell", for: indexPath) as! HourTaskCell
             cell.configure(hourText: hourText, tasks: tasks)
 
-            // Only highlight for the selected date and time - ensure single highlighting
-            if let start = selectedStartTime, let end = selectedEndTime, let tempDateText = tempDateText {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateStyle = .medium
-                let selectedTaskDate = dateFormatter.date(from: tempDateText)
-                let isCurrentDate = Calendar.current.isDate(selectedTaskDate ?? Date(), inSameDayAs: currentSelectedDate)
-                if isCurrentDate {
-                    let calendar = Calendar.current
-                    var startHour = calendar.component(.hour, from: start)
-                    var startMinute = calendar.component(.minute, from: start)
-                    startMinute += 30
-                    if startMinute >= 60 {
-                        startMinute -= 60
-                        startHour += 1
-                    }
-
-                    var endHour = calendar.component(.hour, from: end)
-                    var endMinute = calendar.component(.minute, from: end)
-                    endMinute += 30
-                    if endMinute >= 60 {
-                        endMinute -= 60
-                        endHour += 1
-                    }
-                    // Only highlight if this hour is within the task time range
-                    if hourIndex == startHour && hourIndex == endHour {
-                        // Task is within this single hour
-                        cell.showShadedRegion(startMinute: startMinute, endMinute: endMinute, taskName: tempTaskTitle)
-                    } else if hourIndex == startHour {
-                        // Task starts in this hour
-                        cell.showShadedRegion(startMinute: startMinute, endMinute: 60, taskName: tempTaskTitle)
-                    } else if hourIndex > startHour && hourIndex < endHour {
-                        // Task spans this full hour
-                        cell.showShadedRegion(startMinute: 0, endMinute: 60, taskName: tempTaskTitle)
-                    } else if hourIndex == endHour {
-                        // Task ends in this hour
-                        cell.showShadedRegion(startMinute: 0, endMinute: endMinute, taskName: tempTaskTitle)
-                    } else {
-                        // No highlighting for this hour
-                        cell.showShadedRegion(startMinute: nil, endMinute: nil)
-                    }
-                } else {
-                    cell.showShadedRegion(startMinute: nil, endMinute: nil)
-                }
-            } else {
+            // Highlight every hour that has at least one task.
+            // This allows multiple highlighted blocks in a single day.
+            if tasks.isEmpty {
                 cell.showShadedRegion(startMinute: nil, endMinute: nil)
+            } else {
+                // Full-hour highlight; if there is only one task, show its name in the shaded block.
+                let name = (tasks.count == 1 ? tasks.first : nil)
+                cell.showShadedRegion(startMinute: 0, endMinute: 60, taskName: name)
             }
             return cell
         }
@@ -1525,23 +1522,62 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
 // MARK: - TaskListCellDelegate
 extension CalendarViewController: TaskListCellDelegate {
-    func didRequestDelete(task: String) {
+    func didRequestDelete(task: String, atFlatIndex: Int) {
         let dateKey = stringFromDate(currentSelectedDate)
         guard var tasksByHour = tasksByDateAndHour[dateKey] else { return }
 
-        for (hour, tasks) in tasksByHour {
-            if let index = tasks.firstIndex(of: task) {
-                // Delete linked Apple Calendar event if present
-                deleteCalendarEventIfExists(dateKey: dateKey, hour: hour, title: task)
-                tasksByHour[hour]?.remove(at: index)
-                if tasksByHour[hour]?.isEmpty == true {
-                    tasksByHour.removeValue(forKey: hour)
+        // Find the exact (hour, taskIndex) for this flat index (matches combined list order)
+        var flatIdx = 0
+        var targetHour: Int?
+        var targetTaskIndex: Int?
+        for hour in tasksByHour.keys.sorted() {
+            let tasks = tasksByHour[hour] ?? []
+            for (taskIndex, _) in tasks.enumerated() {
+                if flatIdx == atFlatIndex {
+                    targetHour = hour
+                    targetTaskIndex = taskIndex
+                    break
                 }
-                break
+                flatIdx += 1
             }
+            if targetHour != nil { break }
         }
 
-        tasksByDateAndHour[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
+        // Fallback: if flat index didn't match (e.g. data changed), remove first occurrence by name
+        let hour: Int
+        let index: Int
+        if let h = targetHour, let i = targetTaskIndex {
+            hour = h
+            index = i
+        } else {
+            guard let pair = tasksByHour.first(where: { $0.value.contains(task) }),
+                  let i = pair.value.firstIndex(of: task) else { return }
+            hour = pair.key
+            index = i
+        }
+
+        deleteCalendarEventIfExists(dateKey: dateKey, hour: hour, title: task)
+        var updated = tasksByHour[hour] ?? []
+        updated.remove(at: index)
+        tasksByHour[hour] = updated.isEmpty ? nil : updated
+        if tasksByHour[hour] == nil {
+            tasksByHour.removeValue(forKey: hour)
+        }
+
+        // Replace entire dictionary so didSet fires and data is persisted
+        var full = tasksByDateAndHour
+        full[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
+        tasksByDateAndHour = full
+        saveTasks()
+
+        // Clear highlighting if the deleted task was the one being highlighted
+        if tempTaskTitle == task {
+            tempTaskTitle = nil
+            selectedStartTime = nil
+            selectedEndTime = nil
+            tempDateText = nil
+        }
+
         hourlyTableView.reloadData()
     }
     
@@ -1559,16 +1595,16 @@ extension CalendarViewController: TaskListCellDelegate {
         guard var tasksByHour = tasksByDateAndHour[dateKey] else { return }
 
         for (hour, tasks) in tasksByHour {
-            if let index = tasks.firstIndex(of: task) {
-                tasksByHour[hour]?.remove(at: index)
-                if tasksByHour[hour]?.isEmpty == true {
-                    tasksByHour.removeValue(forKey: hour)
-                }
-                break
-            }
+            guard let index = tasks.firstIndex(of: task) else { continue }
+            var updated = tasksByHour[hour] ?? []
+            updated.remove(at: index)
+            tasksByHour[hour] = updated.isEmpty ? nil : updated
+            if tasksByHour[hour] == nil { tasksByHour.removeValue(forKey: hour) }
+            break
         }
 
         tasksByDateAndHour[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
+        saveTasks()
         hourlyTableView.reloadData()
     }
     
@@ -1583,16 +1619,13 @@ extension CalendarViewController: TaskListCellDelegate {
         let dateKey = stringFromDate(currentSelectedDate)
         let currentHour = Calendar.current.component(.hour, from: Date())
         
-        if tasksByDateAndHour[dateKey] == nil {
-            tasksByDateAndHour[dateKey] = [:]
-        }
+        var dayTasks = tasksByDateAndHour[dateKey] ?? [:]
+        var hourTasks = dayTasks[currentHour] ?? []
+        hourTasks.append(task)
+        dayTasks[currentHour] = hourTasks
+        tasksByDateAndHour[dateKey] = dayTasks
         
-        if tasksByDateAndHour[dateKey]?[currentHour] != nil {
-            tasksByDateAndHour[dateKey]?[currentHour]?.append(task)
-        } else {
-            tasksByDateAndHour[dateKey]?[currentHour] = [task]
-        }
-        
+        saveTasks()
         hourlyTableView.reloadData()
     }
     
@@ -1654,6 +1687,8 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
             }
 
             textField.text = timeString
+            // Immediately refresh highlighting and tasks after time selection
+            self.hourlyTableView.reloadData()
             pickerVC?.dismiss(animated: true)
         }
         pickerVC.onCancel = { [weak pickerVC] in pickerVC?.dismiss(animated: true) }
@@ -1674,6 +1709,8 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
             let dateString = formatter.string(from: selectedDate)
             self.tempDateText = dateString
             textField.text = dateString
+            // Immediately refresh highlighting and tasks after date selection
+            self.hourlyTableView.reloadData()
             pickerVC?.dismiss(animated: true)
         }
         pickerVC.onCancel = { [weak pickerVC] in pickerVC?.dismiss(animated: true) }
