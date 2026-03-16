@@ -499,7 +499,7 @@ class HomeViewController: UIViewController {
                     view.removeFromSuperview()
                 }
             }
-            
+        
             guard selectedPatientIndex < patients.count else { return }
             let selectedPatient = patients[selectedPatientIndex]
             
@@ -510,25 +510,12 @@ class HomeViewController: UIViewController {
             let patientInfoView = createPatientInfoView(for: selectedPatient)
             contentView.addSubview(patientInfoView)
             
-            // Upcoming tasks label
-            upcomingTasksLabel = UILabel()
-            upcomingTasksLabel.text = "Upcoming Tasks"
-            upcomingTasksLabel.font = UIFont.boldSystemFont(ofSize: 24)
-            upcomingTasksLabel.textColor = .systemIndigo
-            upcomingTasksLabel.translatesAutoresizingMaskIntoConstraints = false
-            
-            // Tasks stack view
+            // Tasks stack view (now directly under patient info, heading removed)
             tasksStackView = UIStackView()
             tasksStackView.axis = .vertical
             tasksStackView.spacing = 12
             tasksStackView.alignment = .fill
             tasksStackView.translatesAutoresizingMaskIntoConstraints = false
-            
-            // Add 3 sample task boxes
-            for i in 1...3 {
-                let taskBox = createTaskBox(title: "Task \(i)", description: "Sample task description \(i)")
-                tasksStackView.addArrangedSubview(taskBox)
-            }
             
             // Map view
             mapView = MKMapView()
@@ -547,7 +534,6 @@ class HomeViewController: UIViewController {
             annotation.subtitle = "Austin, Texas"
             mapView.addAnnotation(annotation)
             
-            contentView.addSubview(upcomingTasksLabel)
             contentView.addSubview(tasksStackView)
             contentView.addSubview(mapView)
             
@@ -556,11 +542,8 @@ class HomeViewController: UIViewController {
                 patientInfoView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
                 patientInfoView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
                 
-                upcomingTasksLabel.topAnchor.constraint(equalTo: patientInfoView.bottomAnchor, constant: 20),
-                upcomingTasksLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-                upcomingTasksLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-                
-                tasksStackView.topAnchor.constraint(equalTo: upcomingTasksLabel.bottomAnchor, constant: 16),
+                // With heading removed, tasksStackView anchors directly below patientInfoView
+                tasksStackView.topAnchor.constraint(equalTo: patientInfoView.bottomAnchor, constant: 16),
                 tasksStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
                 tasksStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
                 
