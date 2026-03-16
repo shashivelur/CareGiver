@@ -499,7 +499,7 @@ class HomeViewController: UIViewController {
                     view.removeFromSuperview()
                 }
             }
-            
+        
             guard selectedPatientIndex < patients.count else { return }
             let selectedPatient = patients[selectedPatientIndex]
             
