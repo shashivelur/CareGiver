@@ -524,12 +524,6 @@ class HomeViewController: UIViewController {
             tasksStackView.alignment = .fill
             tasksStackView.translatesAutoresizingMaskIntoConstraints = false
             
-            // Add 3 sample task boxes
-            for i in 1...3 {
-                let taskBox = createTaskBox(title: "Task \(i)", description: "Sample task description \(i)")
-                tasksStackView.addArrangedSubview(taskBox)
-            }
-            
             // Map view
             mapView = MKMapView()
             mapView.translatesAutoresizingMaskIntoConstraints = false
