@@ -965,30 +965,22 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     }
     
     func sendTaskAssignmentNotification(taskTitle: String, assignedPeople: [TrustedPerson]) {
-        let content = UNMutableNotificationContent()
-        content.title = "Task Assignment"
-        content.body = "You have been assigned to: \(taskTitle)"
-        content.sound = .default
-        
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error sending assignment notification: \(error)")
-            } else {
-                print("Assignment notification sent for task: \(taskTitle)")
-            }
-        }
-        
-        // Also post to notification center for in-app display
+        let assignedNames = assignedPeople.map { $0.name }.joined(separator: ", ")
+        let title = "Task Assigned"
+        let body = assignedNames.isEmpty
+            ? "Task updated: \(taskTitle)"
+            : "Assigned \(assignedNames) to: \(taskTitle)"
+
+        // Post to notification center for in-app display.
+        // Note: we intentionally do NOT create a local (system) notification here; otherwise
+        // the device doing the assigning would incorrectly get a "You have been assigned" alert.
         NotificationCenter.default.post(
             name: NSNotification.Name("TaskAssigned"),
             object: nil,
             userInfo: [
-                "title": "Task Assignment",
-                "body": "You have been assigned to: \(taskTitle)",
-                "assignedPeople": assignedPeople.map { $0.name }.joined(separator: ", ")
+                "title": title,
+                "body": body,
+                "assignedPeople": assignedNames
             ]
         )
     }
