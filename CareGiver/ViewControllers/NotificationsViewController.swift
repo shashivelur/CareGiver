@@ -29,7 +29,7 @@ class NotificationsViewController: UIViewController {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppNotification(_:)),
-            name: UIApplication.didReceiveMemoryWarningNotification, // placeholder for your in-app notifications
+            name: NSNotification.Name("TaskAssigned"),
             object: nil
         )
         
