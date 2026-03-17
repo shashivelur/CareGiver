@@ -1520,8 +1520,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
 	@objc private func appDidBecomeActive() {
 		importAppleCalendarEvents(for: currentSelectedDate)
-	}
-
+ 	}
+ 
     func setupYearCollectionView() {
         view.addSubview(yearCollectionView)
         yearCollectionView.tintColor = .systemIndigo
