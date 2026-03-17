@@ -275,6 +275,42 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     // Key format: "<dateKey>|<hour>|<title>"
     private var taskEventIdByKey: [String: String] = [:]
 
+    // MARK: - Per-task details persistence
+    private struct TaskDetails: Codable, Equatable {
+        var startTimeInterval: TimeInterval?
+        var endTimeInterval: TimeInterval?
+        var startLocation: String?
+        var destination: String?
+        var description: String?
+        var trustedPeople: [TrustedPerson]
+
+        init(
+            startTime: Date?,
+            endTime: Date?,
+            startLocation: String?,
+            destination: String?,
+            description: String?,
+            trustedPeople: [TrustedPerson]
+        ) {
+            self.startTimeInterval = startTime?.timeIntervalSince1970
+            self.endTimeInterval = endTime?.timeIntervalSince1970
+            self.startLocation = startLocation
+            self.destination = destination
+            self.description = description
+            self.trustedPeople = trustedPeople
+        }
+
+        var startTime: Date? {
+            startTimeInterval.map { Date(timeIntervalSince1970: $0) }
+        }
+
+        var endTime: Date? {
+            endTimeInterval.map { Date(timeIntervalSince1970: $0) }
+        }
+    }
+
+    private var taskDetailsByKey: [String: TaskDetails] = [:] { didSet { saveTaskDetails() } }
+
     // Store selected time values and which field was tapped
     var selectedStartTime: Date? { didSet { saveHighlightingData() } }
     var selectedEndTime: Date? { didSet { saveHighlightingData() } }
@@ -311,6 +347,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         loadTasks()
         loadEventIds()
         loadNotificationDuration()
+        loadTaskDetails()
         
         // Load highlighting and task edit data
         loadHighlightingData()
@@ -675,6 +712,17 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             if !self.tempTrustedPeople.isEmpty {
                 self.sendTaskAssignmentNotification(taskTitle: title, assignedPeople: self.tempTrustedPeople)
             }
+
+            // Persist all task details (so edit restores destination/times/etc.)
+            let detailsKey = self.eventKey(dateKey: dateKey, hour: hour, title: title)
+            self.taskDetailsByKey[detailsKey] = TaskDetails(
+                startTime: startTimeForCalendar,
+                endTime: endTimeForCalendar,
+                startLocation: (self.tempStartLocation?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 },
+                destination: (self.tempDestination?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 },
+                description: (self.tempDescription?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 },
+                trustedPeople: self.tempTrustedPeople
+            )
             
             // Add to Apple Calendar (use dates on the selected day, not today)
             if let startTime = startTimeForCalendar, let endTime = endTimeForCalendar {
@@ -713,12 +761,18 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
         guard let hour = taskHour else { return }
         
-        // Try to get the real start/end time from selectedStartTime/selectedEndTime if they match this task
+        let existingKey = eventKey(dateKey: dateKey, hour: hour, title: task)
+        let existingDetails = taskDetailsByKey[existingKey]
+
+        // Prefer saved times if present; otherwise fall back to current highlight/hour-based logic
         var startTimeString: String = ""
         var endTimeString: String = ""
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
-        if let start = selectedStartTime, let end = selectedEndTime, tempTaskTitle == task {
+        if let start = existingDetails?.startTime, let end = existingDetails?.endTime {
+            startTimeString = formatter.string(from: start)
+            endTimeString = formatter.string(from: end)
+        } else if let start = selectedStartTime, let end = selectedEndTime, tempTaskTitle == task {
             startTimeString = formatter.string(from: start)
             endTimeString = formatter.string(from: end)
         } else {
@@ -755,16 +809,19 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         // Start location
         alert.addTextField { textField in
             textField.placeholder = "Start Location (optional)"
+            textField.text = existingDetails?.startLocation ?? ""
         }
         
         // Destination
         alert.addTextField { textField in
             textField.placeholder = "Destination (optional)"
+            textField.text = existingDetails?.destination ?? ""
         }
         
         // Description
         alert.addTextField { textField in
             textField.placeholder = "Description (optional)"
+            textField.text = existingDetails?.description ?? ""
         }
         
         // Date
@@ -782,7 +839,12 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             textField.placeholder = "Assign Trusted People"
             textField.tag = 200
             textField.inputView = UIView()
+            let people = existingDetails?.trustedPeople ?? []
+            textField.text = people.map { $0.name }.joined(separator: ", ")
         }
+
+        // Keep the picker's preselected state aligned to the task being edited
+        self.tempTrustedPeople = existingDetails?.trustedPeople ?? []
         
         // Capture references to text fields
         let startTimeField = alert.textFields?.first(where: { $0.tag == 1 })
@@ -873,6 +935,27 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 return originalHour
             }
         }()
+
+        // Determine start/end Date values on the target day (if possible)
+        let calendar = Calendar.current
+        var computedStart: Date?
+        var computedEnd: Date?
+        if let startText = startTime, let endText = endTime {
+            var startComponents = calendar.dateComponents([.year, .month, .day], from: targetDate)
+            if let time = timeFormatter.date(from: startText) {
+                let comps = calendar.dateComponents([.hour, .minute], from: time)
+                startComponents.hour = comps.hour
+                startComponents.minute = comps.minute
+            }
+            var endComponents = calendar.dateComponents([.year, .month, .day], from: targetDate)
+            if let time = timeFormatter.date(from: endText) {
+                let comps = calendar.dateComponents([.hour, .minute], from: time)
+                endComponents.hour = comps.hour
+                endComponents.minute = comps.minute
+            }
+            computedStart = calendar.date(from: startComponents)
+            computedEnd = calendar.date(from: endComponents)
+        }
         
         // Remove old task from original date
         guard var originalTasksByHour = tasksByDateAndHour[originalDateKey] else { return }
@@ -897,6 +980,23 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
         // Update tempTaskTitle so highlight label updates
         self.tempTaskTitle = newTitle
+
+        // Persist all edited details (including destination/start location/times/trusted people)
+        let oldKey = eventKey(dateKey: originalDateKey, hour: originalHour, title: oldTask)
+        let newKey = eventKey(dateKey: targetDateKey, hour: targetHour, title: newTitle)
+        taskDetailsByKey.removeValue(forKey: oldKey)
+        taskDetailsByKey[newKey] = TaskDetails(
+            startTime: computedStart,
+            endTime: computedEnd,
+            startLocation: (startLocation?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 },
+            destination: (destination?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 },
+            description: (description?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 },
+            trustedPeople: tempTrustedPeople
+        )
+
+        // Keep highlighting times consistent with the user's edit
+        if let computedStart { self.selectedStartTime = computedStart }
+        if let computedEnd { self.selectedEndTime = computedEnd }
 
         // Update Apple Calendar event
         if let startText = startTime,
@@ -925,7 +1025,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
             if let newStart = calendar.date(from: startComponents),
                let newEnd = calendar.date(from: endComponents) {
-                let oldKey = eventKey(dateKey: originalDateKey, hour: originalHour, title: oldTask)
                 updateOrCreateCalendarEvent(
                     oldKey: oldKey,
                     newDateKey: targetDateKey,
@@ -940,6 +1039,20 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
         // UI refresh
         hourlyTableView.reloadData()
+    }
+
+    // MARK: - Task details persistence
+    private func loadTaskDetails() {
+        guard let data = UserDefaults.standard.data(forKey: "task_details_by_key_v1"),
+              let decoded = try? JSONDecoder().decode([String: TaskDetails].self, from: data) else {
+            return
+        }
+        taskDetailsByKey = decoded
+    }
+
+    private func saveTaskDetails() {
+        guard let data = try? JSONEncoder().encode(taskDetailsByKey) else { return }
+        UserDefaults.standard.set(data, forKey: "task_details_by_key_v1")
     }
 
     // MARK: - Notification helper
