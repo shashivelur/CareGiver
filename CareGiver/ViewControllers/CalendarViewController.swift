@@ -533,7 +533,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         // Set the calendar to the selected month
         let calendar = Calendar.current
         let dateComponents = DateComponents(year: year, month: month, day: 1)
-        if let date = calendar.date(from: dateComponents) {
+        if let _ = calendar.date(from: dateComponents) {
             // Set the calendar view to show the selected month
             calendarView.visibleDateComponents = dateComponents
         }
@@ -596,6 +596,49 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             addTaskButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
             addTaskButton.heightAnchor.constraint(equalToConstant: 50)
         ])
+    }
+
+    // MARK: - Validation helpers
+    private func showErrorAlert(title: String = "Error", message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        if let presented = presentedViewController, presented is UIAlertController {
+            presented.present(alert, animated: true)
+        } else {
+            present(alert, animated: true)
+        }
+    }
+
+    private func parseRequiredDateAndTimes(dateString: String?, startTimeString: String?, endTimeString: String?) -> (date: Date, start: Date, end: Date)? {
+        // All required
+        guard let dateStr = dateString?.trimmingCharacters(in: .whitespacesAndNewlines), !dateStr.isEmpty,
+              let startStr = startTimeString?.trimmingCharacters(in: .whitespacesAndNewlines), !startStr.isEmpty,
+              let endStr = endTimeString?.trimmingCharacters(in: .whitespacesAndNewlines), !endStr.isEmpty else {
+            return nil
+        }
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        guard let baseDate = dateFormatter.date(from: dateStr) else { return nil }
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a"
+        guard let startTimeOnly = timeFormatter.date(from: startStr),
+              let endTimeOnly = timeFormatter.date(from: endStr) else { return nil }
+
+        let cal = Calendar.current
+        var startComps = cal.dateComponents([.year, .month, .day], from: baseDate)
+        let startParts = cal.dateComponents([.hour, .minute], from: startTimeOnly)
+        startComps.hour = startParts.hour
+        startComps.minute = startParts.minute
+
+        var endComps = cal.dateComponents([.year, .month, .day], from: baseDate)
+        let endParts = cal.dateComponents([.hour, .minute], from: endTimeOnly)
+        endComps.hour = endParts.hour
+        endComps.minute = endParts.minute
+
+        guard let start = cal.date(from: startComps),
+              let end = cal.date(from: endComps) else { return nil }
+        return (date: baseDate, start: start, end: end)
     }
 
     @objc func presentAddTaskPopup() {
@@ -662,24 +705,37 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             self.tempDescription = fields[safe: 5]?.text
             self.tempDateText = fields[safe: 6]?.text
 
-            guard let title = self.tempTaskTitle, !title.isEmpty else { return }
+            // Validate required fields
+            guard let title = self.tempTaskTitle?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+                self.showErrorAlert(message: "Fill in all required fields.")
+                return
+            }
 
-            // Parse date and time and add task
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .medium
-            let selectedDate = dateFormatter.date(from: self.tempDateText ?? "") ?? Date()
+            guard let parsed = self.parseRequiredDateAndTimes(
+                dateString: self.tempDateText,
+                startTimeString: self.tempStartTimeText,
+                endTimeString: self.tempEndTimeText
+            ) else {
+                self.showErrorAlert(message: "Fill in all required fields.")
+                return
+            }
+
+            // Validate time ordering
+            if parsed.start >= parsed.end {
+                self.showErrorAlert(message: "Invalid times. Start time must be before end time.")
+                return
+            }
+
+            // Proceed with add
+            let selectedDate = parsed.date
             let dateKey = self.stringFromDate(selectedDate)
 
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "h:mm a"
-            var hour = 0
-            if let startTime = self.tempStartTimeText,
-               let date = timeFormatter.date(from: startTime) {
-                hour = Calendar.current.component(.hour, from: date)
-            }
+            let hour = Calendar.current.component(.hour, from: parsed.start)
 
             // Check for time conflicts
             if self.hasTimeConflict(dateKey: dateKey, hour: hour) {
+                self.selectedStartTime = parsed.start
+                self.selectedEndTime = parsed.end
                 self.handleTimeConflict(dateKey: dateKey, hour: hour, newTaskTitle: title, newTaskStartTime: self.selectedStartTime, newTaskEndTime: self.selectedEndTime, newTaskDescription: self.tempDescription, newTaskTrustedPeople: self.tempTrustedPeople)
                 return
             }
@@ -694,35 +750,23 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 self.tasksByDateAndHour[dateKey]?[hour] = [title]
             }
 
-            // Build start/end dates using the selected date (from tempDateText), not today
-            let calendar = Calendar.current
-            var startTimeForNotification: Date?
-            var startTimeForCalendar: Date?
-            var endTimeForCalendar: Date?
-            if let start = self.selectedStartTime, let end = self.selectedEndTime {
-                let startHour = calendar.component(.hour, from: start)
-                let startMinute = calendar.component(.minute, from: start)
-                let endHour = calendar.component(.hour, from: end)
-                let endMinute = calendar.component(.minute, from: end)
-                startTimeForNotification = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: selectedDate)
-                startTimeForCalendar = startTimeForNotification
-                endTimeForCalendar = calendar.date(bySettingHour: endHour, minute: endMinute, second: 0, of: selectedDate)
-            }
+            // Build start/end dates (already computed)
+            let startTimeForNotification = parsed.start
+            let startTimeForCalendar = parsed.start
+            let endTimeForCalendar = parsed.end
 
             // Schedule local notification and store identifier mapping
-            if let startTime = startTimeForNotification {
-                let key = self.eventKey(dateKey: dateKey, hour: hour, title: title)
-                let identifier = self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
-                self.taskNotificationIdByKey[key] = identifier
-                self.saveNotificationIds()
-            }
+            let key = self.eventKey(dateKey: dateKey, hour: hour, title: title)
+            let identifier = self.scheduleTaskNotification(title: title, date: startTimeForNotification, minutesBefore: self.notificationMinutesBefore)
+            self.taskNotificationIdByKey[key] = identifier
+            self.saveNotificationIds()
             
             // Send notification if trusted people are assigned
             if !self.tempTrustedPeople.isEmpty {
                 self.sendTaskAssignmentNotification(taskTitle: title, assignedPeople: self.tempTrustedPeople)
             }
 
-            // Persist all task details (so edit restores destination/times/etc.)
+            // Persist all task details
             let detailsKey = self.eventKey(dateKey: dateKey, hour: hour, title: title)
             self.taskDetailsByKey[detailsKey] = TaskDetails(
                 startTime: startTimeForCalendar,
@@ -733,17 +777,23 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 trustedPeople: self.tempTrustedPeople
             )
             
-            // Add to Apple Calendar (use dates on the selected day, not today)
-            if let startTime = startTimeForCalendar, let endTime = endTimeForCalendar {
-                self.addTaskToAppleCalendar(
-                    title: title,
-                    startTime: startTime,
-                    endTime: endTime,
-                    description: self.tempDescription ?? "",
-                    dateKey: dateKey,
-                    hour: hour
-                )
-            }
+            // Add to Apple Calendar
+            self.addTaskToAppleCalendar(
+                title: title,
+                startTime: startTimeForCalendar,
+                endTime: endTimeForCalendar,
+                description: self.tempDescription ?? "",
+                dateKey: dateKey,
+                hour: hour
+            )
+            
+            // Keep highlighting consistent
+            self.tempTaskTitle = title
+            self.selectedStartTime = startTimeForCalendar
+            self.selectedEndTime = endTimeForCalendar
+            let df = DateFormatter()
+            df.dateStyle = .medium
+            self.tempDateText = df.string(from: selectedDate)
             
             // Reload table view to show the new task
             self.hourlyTableView.reloadData()
@@ -882,18 +932,33 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
             guard let fields = alert.textFields,
-                  let newTitle = fields[0].text, !newTitle.isEmpty else { return }
-            
-            // Update the task with new details
+                  let newTitle = fields[0].text?.trimmingCharacters(in: .whitespacesAndNewlines), !newTitle.isEmpty else {
+                self.showErrorAlert(message: "Fill in all required fields.")
+                return
+            }
+
+            // Validate required date/time fields
+            let dateString = fields[6].text
+            let startString = fields[1].text
+            let endString = fields[2].text
+            guard let parsed = self.parseRequiredDateAndTimes(dateString: dateString, startTimeString: startString, endTimeString: endString) else {
+                self.showErrorAlert(message: "Fill in all required fields.")
+                return
+            }
+            if parsed.start >= parsed.end {
+                self.showErrorAlert(message: "Invalid times. Start time must be before end time.")
+                return
+            }
+
             self.updateTaskWithNewDetails(
                 oldTask: task,
                 newTitle: newTitle,
-                startTime: fields[1].text,
-                endTime: fields[2].text,
+                startTime: startString,
+                endTime: endString,
                 startLocation: fields[3].text,
                 destination: fields[4].text,
                 description: fields[5].text,
-                date: fields[6].text,
+                date: dateString,
                 trustedPeople: fields[7].text,
                 originalHour: hour
             )
@@ -1985,4 +2050,3 @@ extension CalendarViewController {
         navigateToDayView(date: date)
     }
 }
-
