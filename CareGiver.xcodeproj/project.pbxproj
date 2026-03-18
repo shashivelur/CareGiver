@@ -40,6 +40,7 @@
 		618779BF2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618779BE2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift */; };
 		6192FEB92E495F7900ED36EB /* RegisterStep1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */; };
 		61A3FD072E81B3DF0054301E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A3FD062E81B3DF0054301E /* Theme.swift */; };
+		61F7BAA02F67309D00DD3C18 /* PrescriptionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F7BA9F2F67309C00DD3C18 /* PrescriptionsViewController.swift */; };
 		A1B2C3D4E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F7 /* AppDelegate.swift */; };
 		A1B2C3D4E5F8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F9 /* SceneDelegate.swift */; };
 		A1B2C3D4E600 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E601 /* LoginViewController.swift */; };
@@ -101,6 +102,7 @@
 		618779BE2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PatientCloudSync+Hashing.swift"; sourceTree = "<group>"; };
 		6192FEB82E495F6C00ED36EB /* RegisterStep1ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterStep1ViewController.swift; sourceTree = "<group>"; };
 		61A3FD062E81B3DF0054301E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		61F7BA9F2F67309C00DD3C18 /* PrescriptionsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrescriptionsViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E601 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 				61692B882E92B00100FCDAA8 /* ReportsCloudSync.swift */,
 				618779BC2E9C6D950063EFAD /* Hashing.swift */,
 				618779BE2E9C6DA50063EFAD /* PatientCloudSync+Hashing.swift */,
+				61F7BA9F2F67309C00DD3C18 /* PrescriptionsViewController.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -365,6 +368,7 @@
 				61692B892E92B00100FCDAA8 /* ReportsCloudSync.swift in Sources */,
 				5CC275BA2E526E95003408F7 /* YearMonthCell.swift in Sources */,
 				332D9AED2E89934A00C7224B /* DetectedBeaconCell.swift in Sources */,
+				61F7BAA02F67309D00DD3C18 /* PrescriptionsViewController.swift in Sources */,
 				A1B2C3D4E600 /* LoginViewController.swift in Sources */,
 				E67EF1902E89EE9B0086D673 /* CAFCEligibilityResultViewController.swift in Sources */,
 				5CC275AE2E526E4F003408F7 /* TrustedPeopleViewController.swift in Sources */,

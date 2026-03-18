@@ -14,7 +14,7 @@ import FirebaseAuth
 import FirebaseFirestore
 
 
-class RegisterStep1ViewController: UIViewController {
+class RegisterStep1ViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var usernameTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var firstNameTextField: UITextField!
@@ -29,6 +29,9 @@ class RegisterStep1ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardDismissal()
+        
+        phoneNumberTextField.delegate = self
+        phoneNumberTextField.addTarget(self, action: #selector(phoneEditingChanged(_:)), for: .editingChanged)
     }
     
     var handle: AuthStateDidChangeListenerHandle?
@@ -56,6 +59,21 @@ class RegisterStep1ViewController: UIViewController {
 
         if trimmedUsername.isEmpty || trimmedPassword.isEmpty || trimmedFirst.isEmpty || trimmedLast.isEmpty || trimmedEmail.isEmpty || trimmedPhone.isEmpty {
             let alert = UIAlertController(title: "Error", message: "Please fill out all fields.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        // Validate email format
+        guard isValidEmail(trimmedEmail) else {
+            let alert = UIAlertController(title: "Invalid Email", message: "Please enter a valid email address.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        // Validate phone number format
+        guard isValidPhone(trimmedPhone) else {
+            let alert = UIAlertController(title: "Invalid Phone Number", message: "Please enter a 10-digit phone number.", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             present(alert, animated: true)
             return
@@ -153,6 +171,31 @@ class RegisterStep1ViewController: UIViewController {
 
     @objc private func dismissKeyboard() {
         view.endEditing(true)
+    }
+    
+    @objc private func phoneEditingChanged(_ textField: UITextField) {
+        // Preserve the cursor position as best as possible
+        let currentText = textField.text ?? ""
+        let digits = currentText.filter { $0.isNumber }
+        let formatted = formatAsUSPhone(digits)
+        textField.text = formatted
+    }
+
+    private func formatAsUSPhone(_ digits: String) -> String {
+        // Limit to 10 digits total
+        let limited = String(digits.prefix(10))
+        let count = limited.count
+        if count == 0 { return "" }
+        var result = ""
+        let chars = Array(limited)
+        if count <= 3 {
+            result = String(chars[0..<count])
+        } else if count <= 6 {
+            result = "(\(String(chars[0..<3]))) \(String(chars[3..<count]))"
+        } else {
+            result = "(\(String(chars[0..<3]))) \(String(chars[3..<6]))-\(String(chars[6..<count]))"
+        }
+        return result
     }
     
     func sha256(for string: String) -> String? {
@@ -293,6 +336,17 @@ class RegisterStep1ViewController: UIViewController {
         }
     }
     
+    private func isValidEmail(_ email: String) -> Bool {
+        // Basic RFC 5322 compliant regex (practical subset)
+        let pattern = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: email)
+    }
+
+    private func isValidPhone(_ phone: String) -> Bool {
+        // Enforce exactly 10 digits; ignore common formatting characters
+        let digitsOnly = phone.filter { $0.isNumber }
+        return digitsOnly.count == 10
+    }
 }
 
 extension Notification.Name {

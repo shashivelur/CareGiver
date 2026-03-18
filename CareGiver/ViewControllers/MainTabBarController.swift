@@ -73,8 +73,8 @@ class MainTabBarController: UITabBarController {
         let calendarVC = CalendarViewController()
         calendarVC.tabBarItem = UITabBarItem(title: "Calendar", image: UIImage(systemName: "calendar"), tag: 1)
         
-        let chatbotVC = ChatbotViewController()
-        chatbotVC.tabBarItem = UITabBarItem(title: "Chatbot", image: UIImage(systemName: "message"), tag: 2)
+        let prescriptionsVC = PrescriptionsViewController()
+        prescriptionsVC.tabBarItem = UITabBarItem(title: "Prescriptions", image: UIImage(systemName: "pills"), tag: 2)
         
         let trackingVC = TrackingViewController()
         trackingVC.tabBarItem = UITabBarItem(title: "Tracking", image: UIImage(systemName: "chart.line.uptrend.xyaxis"), tag: 3)
@@ -85,12 +85,12 @@ class MainTabBarController: UITabBarController {
         // Wrap each view controller in a navigation controller
         let homeNavVC = UINavigationController(rootViewController: homeVC)
         let calendarNavVC = UINavigationController(rootViewController: calendarVC)
-        let chatbotNavVC = UINavigationController(rootViewController: chatbotVC)
+        let prescriptionsNavVC = UINavigationController(rootViewController: prescriptionsVC)
         let trackingNavVC = UINavigationController(rootViewController: trackingVC)
         let socialNavVC = UINavigationController(rootViewController: socialGroupsVC)
         
         // Set the tab bar controllers
-        viewControllers = [homeNavVC, calendarNavVC, chatbotNavVC, trackingNavVC, socialNavVC]
+        viewControllers = [homeNavVC, calendarNavVC, prescriptionsNavVC, trackingNavVC, socialNavVC]
         
         // Set Home as default selected tab
         selectedIndex = 0
@@ -98,7 +98,6 @@ class MainTabBarController: UITabBarController {
         
         // Pass current caregiver to all view controllers
         calendarVC.currentCaregiver = currentCaregiver
-        chatbotVC.currentCaregiver = currentCaregiver
         trackingVC.currentCaregiver = currentCaregiver
         
         // Add hamburger menu to all navigation controllers
