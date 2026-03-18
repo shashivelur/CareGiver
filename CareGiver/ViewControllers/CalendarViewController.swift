@@ -275,6 +275,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     // Key format: "<dateKey>|<hour>|<title>"
     private var taskEventIdByKey: [String: String] = [:]
 
+    // Map our tasks to local notification identifiers so we can cancel when deleted/edited
+    // Key format matches eventKey: "<dateKey>|<hour>|<title>"
+    private var taskNotificationIdByKey: [String: String] = [:]
+
     // MARK: - Per-task details persistence
     private struct TaskDetails: Codable, Equatable {
         var startTimeInterval: TimeInterval?
@@ -348,6 +352,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         loadEventIds()
         loadNotificationDuration()
         loadTaskDetails()
+        loadNotificationIds()
         
         // Load highlighting and task edit data
         loadHighlightingData()
@@ -704,8 +709,12 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 endTimeForCalendar = calendar.date(bySettingHour: endHour, minute: endMinute, second: 0, of: selectedDate)
             }
 
+            // Schedule local notification and store identifier mapping
             if let startTime = startTimeForNotification {
-                self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
+                let key = self.eventKey(dateKey: dateKey, hour: hour, title: title)
+                let identifier = self.scheduleTaskNotification(title: title, date: startTime, minutesBefore: self.notificationMinutesBefore)
+                self.taskNotificationIdByKey[key] = identifier
+                self.saveNotificationIds()
             }
             
             // Send notification if trusted people are assigned
@@ -971,6 +980,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         // Write back (or remove) original day
         tasksByDateAndHour[originalDateKey] = originalTasksByHour.isEmpty ? nil : originalTasksByHour
         
+        // Cancel old notification mapping (old key)
+        let oldKey = eventKey(dateKey: originalDateKey, hour: originalHour, title: oldTask)
+        cancelNotificationIfExists(forKey: oldKey)
+        
         // Insert updated task into target date/hour
         var targetTasksByHour = tasksByDateAndHour[targetDateKey] ?? [:]
         var list = targetTasksByHour[targetHour] ?? []
@@ -982,7 +995,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         self.tempTaskTitle = newTitle
 
         // Persist all edited details (including destination/start location/times/trusted people)
-        let oldKey = eventKey(dateKey: originalDateKey, hour: originalHour, title: oldTask)
         let newKey = eventKey(dateKey: targetDateKey, hour: targetHour, title: newTitle)
         taskDetailsByKey.removeValue(forKey: oldKey)
         taskDetailsByKey[newKey] = TaskDetails(
@@ -1034,6 +1046,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                     newEnd: newEnd,
                     description: description
                 )
+                // Schedule a fresh local notification for the edited task and save mapping
+                let identifier = scheduleTaskNotification(title: newTitle, date: newStart, minutesBefore: notificationMinutesBefore)
+                taskNotificationIdByKey[newKey] = identifier
+                saveNotificationIds()
             }
         }
 
@@ -1056,7 +1072,9 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     }
 
     // MARK: - Notification helper
-    func scheduleTaskNotification(title: String, date: Date, minutesBefore: Int) {
+    // Returns the identifier used so callers can store/cancel later
+    @discardableResult
+    func scheduleTaskNotification(title: String, date: Date, minutesBefore: Int) -> String {
         let content = UNMutableNotificationContent()
         content.title = "Upcoming Task"
         content.body = title
@@ -1066,15 +1084,26 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        let identifier = UUID().uuidString
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error)")
             } else {
-                print("Notification scheduled for \(triggerDate) (\(minutesBefore) minutes before)")
+                print("Notification scheduled for \(triggerDate) (\(minutesBefore) minutes before) id=\(identifier)")
             }
         }
+        return identifier
+    }
+    
+    private func cancelNotificationIfExists(forKey key: String) {
+        guard let identifier = taskNotificationIdByKey[key] else { return }
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        taskNotificationIdByKey.removeValue(forKey: key)
+        saveNotificationIds()
     }
     
     func sendTaskAssignmentNotification(taskTitle: String, assignedPeople: [TrustedPerson]) {
@@ -1213,6 +1242,11 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                                 dayDict[newHour] = list
                                 self.taskEventIdByKey.removeValue(forKey: oldKey)
                                 self.taskEventIdByKey[newKey] = mappedId
+                                // Also move notification mapping if present
+                                if let notifId = self.taskNotificationIdByKey[oldKey] {
+                                    self.taskNotificationIdByKey.removeValue(forKey: oldKey)
+                                    self.taskNotificationIdByKey[newKey] = notifId
+                                }
                                 // Do not keep old title in old bucket
                             } else {
                                 titlesToKeep.append(title)
@@ -1220,6 +1254,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                         } else {
                             // Event was deleted/doesn't belong to today; drop task and mapping
                             self.taskEventIdByKey.removeValue(forKey: oldKey)
+                            // Cancel any orphan notification mapping for this key
+                            self.cancelNotificationIfExists(forKey: oldKey)
                         }
                     } else {
                         // Unmapped internal task; keep as-is
@@ -1307,6 +1343,19 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
     }
     
+    private func loadNotificationIds() {
+        if let data = UserDefaults.standard.data(forKey: "task_notification_ids_v1"),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            taskNotificationIdByKey = decoded
+        }
+    }
+    
+    private func saveNotificationIds() {
+        if let data = try? JSONEncoder().encode(taskNotificationIdByKey) {
+            UserDefaults.standard.set(data, forKey: "task_notification_ids_v1")
+        }
+    }
+    
     private func hasTimeConflict(dateKey: String, hour: Int) -> Bool {
         guard let tasksForDate = tasksByDateAndHour[dateKey] else { return false }
         return tasksForDate[hour] != nil && !tasksForDate[hour]!.isEmpty
@@ -1331,6 +1380,9 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         // Option 2: Replace existing task with new one
         let replaceAction = UIAlertAction(title: "Replace with '\(newTaskTitle)'", style: .destructive) { _ in
             // Remove existing task first
+            // Cancel its notification mapping too
+            let oldKey = self.eventKey(dateKey: dateKey, hour: hour, title: existingTaskName)
+            self.cancelNotificationIfExists(forKey: oldKey)
             self.tasksByDateAndHour[dateKey]?[hour]?.removeAll()
             
             self.addTaskToSchedule(
@@ -1399,7 +1451,10 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         }
 
         if let startTime = startTimeForNotification {
-            scheduleTaskNotification(title: title, date: startTime, minutesBefore: notificationMinutesBefore)
+            let key = eventKey(dateKey: dateKey, hour: hour, title: title)
+            let identifier = scheduleTaskNotification(title: title, date: startTime, minutesBefore: notificationMinutesBefore)
+            taskNotificationIdByKey[key] = identifier
+            saveNotificationIds()
         }
         
         // Send notification if trusted people are assigned
@@ -1516,6 +1571,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         // Save highlighting and task edit data
         saveHighlightingData()
         saveTaskEditData()
+        // Persist any notification id mappings
+        saveNotificationIds()
     }
 
 	@objc private func appDidBecomeActive() {
@@ -1661,7 +1718,14 @@ extension CalendarViewController: TaskListCellDelegate {
             index = i
         }
 
+        // Cancel local notification for this task if scheduled
+        let key = eventKey(dateKey: dateKey, hour: hour, title: task)
+        cancelNotificationIfExists(forKey: key)
+        
+        // Delete Apple Calendar event if exists
         deleteCalendarEventIfExists(dateKey: dateKey, hour: hour, title: task)
+        
+        // Remove from our data model
         var updated = tasksByHour[hour] ?? []
         updated.remove(at: index)
         tasksByHour[hour] = updated.isEmpty ? nil : updated
@@ -1701,6 +1765,10 @@ extension CalendarViewController: TaskListCellDelegate {
 
         for (hour, tasks) in tasksByHour {
             guard let index = tasks.firstIndex(of: task) else { continue }
+            // Cancel any pending notification since task is completed
+            let key = eventKey(dateKey: dateKey, hour: hour, title: task)
+            cancelNotificationIfExists(forKey: key)
+            
             var updated = tasksByHour[hour] ?? []
             updated.remove(at: index)
             tasksByHour[hour] = updated.isEmpty ? nil : updated
