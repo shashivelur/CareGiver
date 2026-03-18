@@ -510,13 +510,29 @@ class HomeViewController: UIViewController {
             let patientInfoView = createPatientInfoView(for: selectedPatient)
             contentView.addSubview(patientInfoView)
             
+<<<<<<< Updated upstream
             // Tasks stack view (now directly under patient info, heading removed)
+=======
+            // Upcoming tasks label
+            upcomingTasksLabel = UILabel()
+            upcomingTasksLabel.text = "Location"
+            upcomingTasksLabel.font = UIFont.boldSystemFont(ofSize: 24)
+            upcomingTasksLabel.textColor = .systemIndigo
+            upcomingTasksLabel.translatesAutoresizingMaskIntoConstraints = false
+            
+            // Tasks stack view
+>>>>>>> Stashed changes
             tasksStackView = UIStackView()
             tasksStackView.axis = .vertical
             tasksStackView.spacing = 12
             tasksStackView.alignment = .fill
             tasksStackView.translatesAutoresizingMaskIntoConstraints = false
             
+<<<<<<< Updated upstream
+=======
+            // If no real tasks are available, leave the stack empty (no placeholders)
+            
+>>>>>>> Stashed changes
             // Map view
             mapView = MKMapView()
             mapView.translatesAutoresizingMaskIntoConstraints = false
