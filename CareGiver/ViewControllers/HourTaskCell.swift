@@ -10,6 +10,13 @@ class HourTaskCell: UITableViewCell {
     // Store multiple shaded regions for overlapping tasks
     private var shadedRegions: [(startFraction: CGFloat, heightFraction: CGFloat, color: UIColor)] = []
     
+    // Keep track of the hour index and tasks shown in this cell
+    private var hourIndex: Int = 0
+    private var currentTasks: [String] = []
+    
+    // Callback invoked when the shaded highlight is tapped
+    var onHighlightTapped: ((Int, String?) -> Void)?
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
@@ -37,6 +44,11 @@ class HourTaskCell: UITableViewCell {
         shadeView.layer.cornerRadius = 4
         contentView.addSubview(shadeView)
         
+        // Tap on shaded region to edit
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleShadeTap))
+        shadeView.addGestureRecognizer(tap)
+        shadeView.isUserInteractionEnabled = true
+        
         // Task label
         taskLabel.font = UIFont.systemFont(ofSize: 14)
         taskLabel.textColor = .label
@@ -59,13 +71,21 @@ class HourTaskCell: UITableViewCell {
         ])
     }
     
+    // Existing API kept for compatibility
     func configure(hourText: String, tasks: [String]) {
         hourLabel.text = hourText
+        currentTasks = tasks
         if tasks.count > 1 {
             taskLabel.text = tasks.joined(separator: "\n")
         } else {
             taskLabel.text = tasks.first
         }
+    }
+    
+    // New overload that also stores hour index
+    func configure(hourText: String, tasks: [String], hourIndex: Int) {
+        self.hourIndex = hourIndex
+        configure(hourText: hourText, tasks: tasks)
     }
     
     // Call this with startMinute/endMinute of the task
@@ -137,11 +157,18 @@ class HourTaskCell: UITableViewCell {
         shadeView.isHidden = false
     }
     
+    @objc private func handleShadeTap() {
+        // If there’s exactly one task, pass its name; otherwise nil so controller can present a chooser
+        let taskName: String? = (currentTasks.count == 1 ? currentTasks.first : nil)
+        onHighlightTapped?(hourIndex, taskName)
+    }
+    
     override func prepareForReuse() {
         super.prepareForReuse()
-        // Don't clear highlighting on reuse to prevent disappearing
-        // shadedRegions.removeAll()
-        // shadeView.isHidden = true
+        onHighlightTapped = nil
+        currentTasks = []
+        hourIndex = 0
+        // We intentionally keep shadedRegions so highlight doesn’t flicker away
     }
 }
 

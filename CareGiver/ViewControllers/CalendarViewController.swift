@@ -1179,8 +1179,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             : "Assigned \(assignedNames) to: \(taskTitle)"
 
         // Post to notification center for in-app display.
-        // Note: we intentionally do NOT create a local (system) notification here; otherwise
-        // the device doing the assigning would incorrectly get a "You have been assigned" alert.
         NotificationCenter.default.post(
             name: NSNotification.Name("TaskAssigned"),
             object: nil,
@@ -1214,7 +1212,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         
         do {
             try eventStore.save(event, span: .thisEvent)
-            print("Event saved to Apple Calendar: \(title)")
             let key = eventKey(dateKey: dateKey, hour: hour, title: title)
             taskEventIdByKey[key] = event.eventIdentifier
             saveEventIds()
@@ -1226,10 +1223,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     private func updateOrCreateCalendarEvent(oldKey: String, newDateKey: String, newHour: Int, newTitle: String, newStart: Date, newEnd: Date, description: String?) {
         ensureCalendarAccess { [weak self] granted in
             guard let self = self else { return }
-            guard granted else {
-                print("Calendar access denied while updating event")
-                return
-            }
+            guard granted else { return }
 
             if let identifier = self.taskEventIdByKey[oldKey], let existing = self.eventStore.event(withIdentifier: identifier) {
                 existing.title = newTitle
@@ -1238,7 +1232,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                 existing.notes = description
                 do {
                     try self.eventStore.save(existing, span: .thisEvent)
-                    // move mapping to new key if key changed
                     let newKey = self.eventKey(dateKey: newDateKey, hour: newHour, title: newTitle)
                     self.taskEventIdByKey.removeValue(forKey: oldKey)
                     self.taskEventIdByKey[newKey] = existing.eventIdentifier
@@ -1247,7 +1240,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
                     print("Failed to update calendar event: \(error.localizedDescription)")
                 }
             } else {
-                // No existing event found, create new and store mapping
                 self.createCalendarEvent(title: newTitle, startTime: newStart, endTime: newEnd, description: description ?? "", dateKey: newDateKey, hour: newHour)
             }
         }
@@ -1289,54 +1281,45 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             let dateKey = self.stringFromDate(date)
             var dayDict: [Int: [String]] = self.tasksByDateAndHour[dateKey] ?? [:]
 
-            // 1) Reconcile existing mapped tasks for this date against today's calendar events
+            // Reconcile existing mapped tasks
             for (hour, titles) in dayDict {
                 var titlesToKeep: [String] = []
                 for title in titles {
                     let oldKey = self.eventKey(dateKey: dateKey, hour: hour, title: title)
                     if let mappedId = self.taskEventIdByKey[oldKey] {
                         if let ev = eventsById[mappedId] {
-                            // Event still exists; check for title/hour changes
                             let newHour = calendar.component(.hour, from: ev.startDate)
                             let newTitle = ev.title ?? "Untitled Event"
                             let newKey = self.eventKey(dateKey: dateKey, hour: newHour, title: newTitle)
                             if newKey != oldKey {
-                                // Move to new bucket and update mapping
                                 var list = dayDict[newHour] ?? []
                                 if !list.contains(newTitle) { list.append(newTitle) }
                                 dayDict[newHour] = list
                                 self.taskEventIdByKey.removeValue(forKey: oldKey)
                                 self.taskEventIdByKey[newKey] = mappedId
-                                // Also move notification mapping if present
                                 if let notifId = self.taskNotificationIdByKey[oldKey] {
                                     self.taskNotificationIdByKey.removeValue(forKey: oldKey)
                                     self.taskNotificationIdByKey[newKey] = notifId
                                 }
-                                // Do not keep old title in old bucket
                             } else {
                                 titlesToKeep.append(title)
                             }
                         } else {
-                            // Event was deleted/doesn't belong to today; drop task and mapping
                             self.taskEventIdByKey.removeValue(forKey: oldKey)
-                            // Cancel any orphan notification mapping for this key
                             self.cancelNotificationIfExists(forKey: oldKey)
                         }
                     } else {
-                        // Unmapped internal task; keep as-is
                         titlesToKeep.append(title)
                     }
                 }
                 dayDict[hour] = titlesToKeep.isEmpty ? nil : titlesToKeep
             }
 
-            // 2) Add or refresh mappings for today's events (including new external events)
+            // Add or refresh mappings for today's events
             for event in events {
                 let startHour = calendar.component(.hour, from: event.startDate)
                 let key = self.eventKey(dateKey: dateKey, hour: startHour, title: event.title)
-                // Remap any previous key for this identifier to the current key
                 if let existingKey = self.taskEventIdByKey.first(where: { $0.value == event.eventIdentifier })?.key, existingKey != key {
-                    // Remove title from old bucket if present
                     let comps = existingKey.split(separator: "|")
                     if comps.count == 3, let oldHour = Int(comps[1]) {
                         if var oldList = dayDict[oldHour] {
@@ -1358,7 +1341,7 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             self.tasksByDateAndHour[dateKey] = dayDict
             self.saveEventIds()
 
-            // 3) Update highlight shading to reflect first event for the day
+            // Update highlight shading to reflect first event for the day
             if let firstEvent = events.first {
                 self.tempTaskTitle = firstEvent.title
                 self.selectedStartTime = firstEvent.startDate
@@ -1437,15 +1420,9 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             preferredStyle: .alert
         )
         
-        // Option 1: Keep existing task, cancel new one
-        let keepExistingAction = UIAlertAction(title: "Keep '\(existingTaskName)'", style: .default) { _ in
-            // Do nothing - just dismiss the alert
-        }
+        let keepExistingAction = UIAlertAction(title: "Keep '\(existingTaskName)'", style: .default)
         
-        // Option 2: Replace existing task with new one
         let replaceAction = UIAlertAction(title: "Replace with '\(newTaskTitle)'", style: .destructive) { _ in
-            // Remove existing task first
-            // Cancel its notification mapping too
             let oldKey = self.eventKey(dateKey: dateKey, hour: hour, title: existingTaskName)
             self.cancelNotificationIfExists(forKey: oldKey)
             self.tasksByDateAndHour[dateKey]?[hour]?.removeAll()
@@ -1461,7 +1438,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             )
         }
         
-        // Option 3: Keep both tasks (add new one to the same hour)
         let keepBothAction = UIAlertAction(title: "Keep Both Tasks", style: .default) { _ in
             self.addTaskToSchedule(
                 dateKey: dateKey, 
@@ -1474,7 +1450,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             )
         }
         
-        // Option 4: Cancel
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
         
         alert.addAction(keepExistingAction)
@@ -1522,17 +1497,14 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             saveNotificationIds()
         }
         
-        // Send notification if trusted people are assigned
         if !trustedPeople.isEmpty {
             sendTaskAssignmentNotification(taskTitle: title, assignedPeople: trustedPeople)
         }
         
-        // Add to Apple Calendar (use dates on the selected day, not today)
         if let startTime = startTimeForCalendar, let endTime = endTimeForCalendar {
             addTaskToAppleCalendar(title: title, startTime: startTime, endTime: endTime, description: description ?? "", dateKey: dateKey, hour: hour)
         }
         
-        // Reload table view to show the new task
         hourlyTableView.reloadData()
     }
     
@@ -1624,7 +1596,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         tempDestination = taskEditData?["tempDestination"] as? String
         tempDescription = taskEditData?["tempDescription"] as? String
         
-        // Load trusted people from JSON
         if let trustedPeopleData = UserDefaults.standard.data(forKey: "temp_trusted_people"),
            let trustedPeople = try? JSONDecoder().decode([TrustedPerson].self, from: trustedPeopleData) {
             tempTrustedPeople = trustedPeople
@@ -1632,11 +1603,8 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     }
     
     @objc private func appWillResignActive() {
-        // Tasks are now automatically saved via didSet observers
-        // Save highlighting and task edit data
         saveHighlightingData()
         saveTaskEditData()
-        // Persist any notification id mappings
         saveNotificationIds()
     }
 
@@ -1656,7 +1624,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
     }
 
     @objc func viewModeChanged() {
-        print("DEBUG: viewModeChanged called, selectedSegmentIndex: \(viewModeControl.selectedSegmentIndex)")
         calendarView.isHidden = true
         dayNavigationStack?.isHidden = true
         hourlyTableView.isHidden = true
@@ -1665,16 +1632,13 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
 
         switch viewModeControl.selectedSegmentIndex {
         case 0: // Day view
-            print("DEBUG: Switching to day view")
             selectedDateLabel.text = formattedDate(currentSelectedDate)
             dayNavigationStack?.isHidden = false
             hourlyTableView.isHidden = false
             addTaskButton.isHidden = false
         case 1: // Month view
-            print("DEBUG: Switching to month view")
             calendarView.isHidden = false
         case 2: // Year view
-            print("DEBUG: Switching to year view")
             yearCollectionView.isHidden = false
         default:
             break
@@ -1702,7 +1666,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             cell.delegate = self
             return cell
         } else if indexPath.row == 1 {
-            // Recently completed tasks section
             let cell = tableView.dequeueReusableCell(withIdentifier: "TaskListCell", for: indexPath) as! TaskListCell
             cell.configure(with: recentlyCompletedTasks, title: "Recently Completed")
             cell.delegate = self
@@ -1712,22 +1675,43 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
             let hourText = hours[hourIndex]
             let tasks = tasksForDate[hourIndex] ?? []
             let cell = tableView.dequeueReusableCell(withIdentifier: "HourTaskCell", for: indexPath) as! HourTaskCell
-            cell.configure(hourText: hourText, tasks: tasks)
+            cell.configure(hourText: hourText, tasks: tasks, hourIndex: hourIndex)
 
-            // Highlight every hour that has at least one task.
-            // This allows multiple highlighted blocks in a single day.
             if tasks.isEmpty {
                 cell.showShadedRegion(startMinute: nil, endMinute: nil)
             } else {
-                // Full-hour highlight; if there is only one task, show its name in the shaded block.
                 let name = (tasks.count == 1 ? tasks.first : nil)
                 cell.showShadedRegion(startMinute: 0, endMinute: 60, taskName: name)
+            }
+            
+            cell.onHighlightTapped = { [weak self] tappedHour, tappedTaskName in
+                guard let self = self else { return }
+                if let name = tappedTaskName {
+                    self.presentEditTaskPopup(for: name)
+                } else {
+                    let all = tasksForDate[tappedHour] ?? []
+                    if all.count == 1, let only = all.first {
+                        self.presentEditTaskPopup(for: only)
+                    } else if all.count > 1 {
+                        let chooser = UIAlertController(title: "Edit Task", message: "Select a task to edit", preferredStyle: .actionSheet)
+                        for t in all {
+                            chooser.addAction(UIAlertAction(title: t, style: .default, handler: { _ in
+                                self.presentEditTaskPopup(for: t)
+                            }))
+                        }
+                        chooser.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+                        if let pop = chooser.popoverPresentationController {
+                            pop.sourceView = tableView
+                            pop.sourceRect = tableView.rectForRow(at: indexPath)
+                        }
+                        self.present(chooser, animated: true)
+                    }
+                }
             }
             return cell
         }
     }
     
-    // Helper to get all tasks for a specific date as (start, end) tuples for DayTimelineView
     func timelineTasks(for date: Date) -> [(start: Date, end: Date)] {
         let dateKey = stringFromDate(date)
         guard let tasksByHour = tasksByDateAndHour[dateKey] else { return [] }
@@ -1736,7 +1720,6 @@ class CalendarViewController: UIViewController, UITableViewDataSource, UITableVi
         let today = calendar.startOfDay(for: date)
         for (hour, titles) in tasksByHour {
             for _ in titles {
-                // For demo, assume each task is 1 hour. You can adjust as needed.
                 if let start = calendar.date(byAdding: .hour, value: hour, to: today),
                    let end = calendar.date(byAdding: .hour, value: hour+1, to: today) {
                     result.append((start: start, end: end))
@@ -1753,7 +1736,6 @@ extension CalendarViewController: TaskListCellDelegate {
         let dateKey = stringFromDate(currentSelectedDate)
         guard var tasksByHour = tasksByDateAndHour[dateKey] else { return }
 
-        // Find the exact (hour, taskIndex) for this flat index (matches combined list order)
         var flatIdx = 0
         var targetHour: Int?
         var targetTaskIndex: Int?
@@ -1770,7 +1752,6 @@ extension CalendarViewController: TaskListCellDelegate {
             if targetHour != nil { break }
         }
 
-        // Fallback: if flat index didn't match (e.g. data changed), remove first occurrence by name
         let hour: Int
         let index: Int
         if let h = targetHour, let i = targetTaskIndex {
@@ -1783,14 +1764,10 @@ extension CalendarViewController: TaskListCellDelegate {
             index = i
         }
 
-        // Cancel local notification for this task if scheduled
         let key = eventKey(dateKey: dateKey, hour: hour, title: task)
         cancelNotificationIfExists(forKey: key)
-        
-        // Delete Apple Calendar event if exists
         deleteCalendarEventIfExists(dateKey: dateKey, hour: hour, title: task)
         
-        // Remove from our data model
         var updated = tasksByHour[hour] ?? []
         updated.remove(at: index)
         tasksByHour[hour] = updated.isEmpty ? nil : updated
@@ -1798,13 +1775,11 @@ extension CalendarViewController: TaskListCellDelegate {
             tasksByHour.removeValue(forKey: hour)
         }
 
-        // Replace entire dictionary so didSet fires and data is persisted
         var full = tasksByDateAndHour
         full[dateKey] = tasksByHour.isEmpty ? nil : tasksByHour
         tasksByDateAndHour = full
         saveTasks()
 
-        // Clear highlighting if the deleted task was the one being highlighted
         if tempTaskTitle == task {
             tempTaskTitle = nil
             selectedStartTime = nil
@@ -1816,21 +1791,16 @@ extension CalendarViewController: TaskListCellDelegate {
     }
     
     func didCompleteTask(task: String) {
-        // Add to recently completed tasks (limit to last 3)
         recentlyCompletedTasks.append(task)
-        
-        // Keep only the last 3 completed tasks
         if recentlyCompletedTasks.count > 3 {
             recentlyCompletedTasks.removeFirst(recentlyCompletedTasks.count - 3)
         }
         
-        // Remove from active tasks
         let dateKey = stringFromDate(currentSelectedDate)
         guard var tasksByHour = tasksByDateAndHour[dateKey] else { return }
 
         for (hour, tasks) in tasksByHour {
             guard let index = tasks.firstIndex(of: task) else { continue }
-            // Cancel any pending notification since task is completed
             let key = eventKey(dateKey: dateKey, hour: hour, title: task)
             cancelNotificationIfExists(forKey: key)
             
@@ -1847,13 +1817,10 @@ extension CalendarViewController: TaskListCellDelegate {
     }
     
     func didUncompleteTask(task: String) {
-        // Remove from recently completed tasks
         if let index = recentlyCompletedTasks.firstIndex(of: task) {
             recentlyCompletedTasks.remove(at: index)
         }
         
-        // Add back to active tasks (we'll need to determine the hour)
-        // For now, add it to the current hour or hour 0 if no current time
         let dateKey = stringFromDate(currentSelectedDate)
         let currentHour = Calendar.current.component(.hour, from: Date())
         
@@ -1870,9 +1837,6 @@ extension CalendarViewController: TaskListCellDelegate {
     func didRequestEdit(task: String) {
         presentEditTaskPopup(for: task)
     }
-    
-    // Removed auto-clear functionality - recently completed tasks now persist
-    
 }
 
 // MARK: - UICollectionView
@@ -1886,12 +1850,10 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
         let month = indexPath.item + 1
         cell.configure(month: month, year: 2025)
         
-        // Handle month navigation
         cell.onMonthTapped = { [weak self] month, year in
             self?.navigateToMonthView(month: month, year: year)
         }
         
-        // Handle date navigation
         cell.onDateTapped = { [weak self] date in
             self?.navigateToDayView(date: date)
         }
@@ -1925,7 +1887,6 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
             }
 
             textField.text = timeString
-            // Immediately refresh highlighting and tasks after time selection
             self.hourlyTableView.reloadData()
             pickerVC?.dismiss(animated: true)
         }
@@ -1947,7 +1908,6 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
             let dateString = formatter.string(from: selectedDate)
             self.tempDateText = dateString
             textField.text = dateString
-            // Immediately refresh highlighting and tasks after date selection
             self.hourlyTableView.reloadData()
             pickerVC?.dismiss(animated: true)
         }
@@ -1966,10 +1926,8 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
         let pickerVC = TrustedPeoplePickerViewController()
         pickerVC.modalPresentationStyle = .overFullScreen
 
-        // Preload already selected
         pickerVC.preselectedPeople = Set(self.tempTrustedPeople)
 
-        // Handle save
         pickerVC.onSave = { [weak self, weak pickerVC] selected in
             guard let self = self else { return }
             self.tempTrustedPeople = selected
@@ -1977,7 +1935,6 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
             pickerVC?.dismiss(animated: true)
         }
 
-        // Handle cancel
         pickerVC.onCancel = { [weak pickerVC] in
             pickerVC?.dismiss(animated: true)
         }
@@ -1985,23 +1942,18 @@ extension CalendarViewController: UICollectionViewDataSource, UICollectionViewDe
         alert.present(pickerVC, animated: true)
     }
 
-
-
-    // MARK: - TableView Delegate
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.row == 0 {
-            // Task list - grow based on number of tasks (1, 2, 3 then scroll)
             let dateKey = stringFromDate(currentSelectedDate)
             let tasksForDate = tasksByDateAndHour[dateKey] ?? [:]
             let combinedTasks = tasksForDate.keys.sorted().flatMap { tasksForDate[$0] ?? [] }
-            let taskCount = max(1, min(3, combinedTasks.count)) // Show 1-3 tasks
-            return CGFloat(50 + (taskCount * 50)) // Base height + task height
+            let taskCount = max(1, min(3, combinedTasks.count))
+            return CGFloat(50 + (taskCount * 50))
         } else if indexPath.row == 1 {
-            // Recently completed - grow based on number of completed tasks (1, 2, 3 then scroll)
             let completedCount = max(1, min(3, recentlyCompletedTasks.count))
             return CGFloat(50 + (completedCount * 50))
         } else {
-            return 80 // Hour cells
+            return 80
         }
     }
 }
@@ -2023,14 +1975,9 @@ func userNotificationCenter(_ center: UNUserNotificationCenter,
 // MARK: - UICalendarViewDelegate
 extension CalendarViewController: UICalendarViewDelegate {
     func calendarView(_ calendarView: UICalendarView, didSelectDate dateComponents: DateComponents) {
-        print("DEBUG: Calendar view date selected: \(dateComponents)")
         guard let date = Calendar.current.date(from: dateComponents) else { 
-            print("DEBUG: Failed to create date from components")
             return 
         }
-        
-        print("DEBUG: Navigating to day view for date: \(date)")
-        // Navigate to day view when a date is selected
         navigateToDayView(date: date)
     }
 }
@@ -2038,15 +1985,11 @@ extension CalendarViewController: UICalendarViewDelegate {
 // MARK: - UICalendarSelectionSingleDateDelegate
 extension CalendarViewController {
     func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
-        print("DEBUG: Single date selection delegate called with: \(dateComponents)")
         guard let dateComponents = dateComponents,
               let date = Calendar.current.date(from: dateComponents) else { 
-            print("DEBUG: Failed to create date from components in delegate")
             return 
         }
-        
-        print("DEBUG: Navigating to day view for date from delegate: \(date)")
-        // Navigate to day view when a date is selected
         navigateToDayView(date: date)
     }
 }
+
