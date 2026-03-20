@@ -493,10 +493,87 @@ class HomeViewController: UIViewController {
     }
     
     private func showSelectedPatientInfo() {
+<<<<<<< Updated upstream
         // Remove existing patient info views
         contentView.subviews.forEach { view in
             if view != patientTabsScrollView {
                 view.removeFromSuperview()
+=======
+            // Remove existing patient info views
+            contentView.subviews.forEach { view in
+                if view != patientTabsScrollView {
+                    view.removeFromSuperview()
+                }
+            }
+        
+            guard selectedPatientIndex < patients.count else { return }
+            let selectedPatient = patients[selectedPatientIndex]
+            
+            let topAnchor = patients.count > 1 ? patientTabsScrollView.bottomAnchor : contentView.topAnchor
+            let topConstant: CGFloat = patients.count > 1 ? 20 : 20
+            
+            // Patient Info Section
+            let patientInfoView = createPatientInfoView(for: selectedPatient)
+            contentView.addSubview(patientInfoView)
+            
+            // Upcoming tasks label
+            upcomingTasksLabel = UILabel()
+            upcomingTasksLabel.text = "Location"
+            upcomingTasksLabel.font = UIFont.boldSystemFont(ofSize: 24)
+            upcomingTasksLabel.textColor = .systemIndigo
+            upcomingTasksLabel.translatesAutoresizingMaskIntoConstraints = false
+            
+            // Tasks stack view
+            tasksStackView = UIStackView()
+            tasksStackView.axis = .vertical
+            tasksStackView.spacing = 12
+            tasksStackView.alignment = .fill
+            tasksStackView.translatesAutoresizingMaskIntoConstraints = false
+            
+            // If no real tasks are available, leave the stack empty (no placeholders)
+            
+            // Map view
+            mapView = MKMapView()
+            mapView.translatesAutoresizingMaskIntoConstraints = false
+            mapView.layer.cornerRadius = 12
+            
+            // Set location to 10606 Marbury Court, Austin, Texas
+            let coordinate = CLLocationCoordinate2D(latitude: 30.3461, longitude: -97.8147)
+            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+            mapView.setRegion(region, animated: false)
+            
+            // Add annotation
+            let annotation = MKPointAnnotation()
+            annotation.coordinate = coordinate
+            annotation.title = "10606 Marbury Court"
+            annotation.subtitle = "Austin, Texas"
+            mapView.addAnnotation(annotation)
+            
+            contentView.addSubview(tasksStackView)
+            contentView.addSubview(mapView)
+            
+            NSLayoutConstraint.activate([
+                patientInfoView.topAnchor.constraint(equalTo: topAnchor, constant: topConstant),
+                patientInfoView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                patientInfoView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                
+                // With heading removed, tasksStackView anchors directly below patientInfoView
+                tasksStackView.topAnchor.constraint(equalTo: patientInfoView.bottomAnchor, constant: 16),
+                tasksStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                tasksStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                
+                mapView.topAnchor.constraint(equalTo: tasksStackView.bottomAnchor, constant: 20),
+                mapView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+                mapView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+                mapView.heightAnchor.constraint(equalToConstant: 250),
+                mapView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
+            ])
+            
+            // Force layout update without manually overriding contentSize; Auto Layout will determine it
+            DispatchQueue.main.async {
+                self.view.setNeedsLayout()
+                self.view.layoutIfNeeded()
+>>>>>>> Stashed changes
             }
         }
     
